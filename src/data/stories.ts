@@ -3,16 +3,16 @@ import rawContent from './stories-content.json';
 import type { Story } from '@/src/types';
 
 const covers: Record<string, number> = {
-  'lion-and-mouse': require('@/assets/images/covers/lion-and-mouse.png'),
-  'tortoise-and-hare': require('@/assets/images/covers/tortoise-and-hare.png'),
-  'princess-and-pea': require('@/assets/images/covers/princess-and-pea.png'),
-  'ugly-duckling': require('@/assets/images/covers/ugly-duckling.png'),
-  'emperors-new-clothes': require('@/assets/images/covers/emperors-new-clothes.png'),
-  'bremen-musicians': require('@/assets/images/covers/bremen-musicians.png'),
-  'frog-prince': require('@/assets/images/covers/frog-prince.png'),
-  'elves-and-shoemaker': require('@/assets/images/covers/elves-and-shoemaker.png'),
-  'little-red-riding-hood': require('@/assets/images/covers/little-red-riding-hood.png'),
-  'three-little-pigs': require('@/assets/images/covers/three-little-pigs.png'),
+  'lion-and-mouse': require('@/assets/images/covers/lion-and-mouse.jpg'),
+  'tortoise-and-hare': require('@/assets/images/covers/tortoise-and-hare.jpg'),
+  'princess-and-pea': require('@/assets/images/covers/princess-and-pea.jpg'),
+  'ugly-duckling': require('@/assets/images/covers/ugly-duckling.jpg'),
+  'emperors-new-clothes': require('@/assets/images/covers/emperors-new-clothes.jpg'),
+  'bremen-musicians': require('@/assets/images/covers/bremen-musicians.jpg'),
+  'frog-prince': require('@/assets/images/covers/frog-prince.jpg'),
+  'elves-and-shoemaker': require('@/assets/images/covers/elves-and-shoemaker.jpg'),
+  'little-red-riding-hood': require('@/assets/images/covers/little-red-riding-hood.jpg'),
+  'three-little-pigs': require('@/assets/images/covers/three-little-pigs.jpg'),
 };
 
 const audio: Record<string, { ru: number; en: number }> = {
