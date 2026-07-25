@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Dreamy Tales",
-    "slug": "dreamy-tales",
+    "slug": "lolli",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -30,7 +30,8 @@
       "versionCode": 1,
       "permissions": [
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "package": "app.dreamytales.mobile"
     },
@@ -64,6 +65,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f485bc0b-25b4-4c7b-9893-4e64c5e041a3"
+      }
+    },
+    "owner": "arabnatanke-team"
   }
 }
