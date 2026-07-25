@@ -41,3 +41,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# local Android installers downloaded from EAS
+*.apk
