@@ -4,7 +4,7 @@
 
 Создатель: **Abdulla Chukhray**
 
-Контакт: **[arabnatanke@gmail.com](mailto:arabnatanke@gmail.com)** · [GitHub](https://github.com/arabnatanke-dev)
+Контакт: **[Gmail](mailto:arabnatanke@gmail.com)** · [GitHub](https://github.com/arabnatanke-dev) · [Teleram ](https://t.me.Chukhray_J) 
 
 ## Что реализовано
 
