@@ -18,13 +18,12 @@ export const unstable_settings = {
  * Пока настройки загружаются, отображает простой экран загрузки.
  */
 function AppNavigation() {
-  const { hydrated, onboardingComplete, colors: palette, isDark } = useApp();
+  const { onboardingComplete, colors: palette, isDark } = useApp();
   const segments = useSegments();
   const styles = createStyles(palette);
 
   // Перенаправляем нового пользователя в онбординг, а прошедшего — к основным вкладкам.
   useEffect(() => {
-    if (!hydrated) return;
     const firstSegment = segments[0] as string | undefined;
     const inOnboarding = firstSegment === 'onboarding';
 
@@ -33,16 +32,7 @@ function AppNavigation() {
     } else if (onboardingComplete && inOnboarding) {
       router.replace('/(tabs)');
     }
-  }, [hydrated, onboardingComplete, segments]);
-
-  if (!hydrated) {
-    return (
-      <View style={styles.loading}>
-        <View style={styles.moon} />
-        <ActivityIndicator color={palette.yellow} size="large" />
-      </View>
-    );
-  }
+  }, [onboardingComplete, segments]);
 
   const current = segments[0] as string | undefined;
   const showMiniPlayer = !['onboarding', 'player'].includes(current ?? '');
@@ -69,15 +59,44 @@ function AppNavigation() {
 }
 
 /**
+ * Показывает лёгкую заставку, пока локальные настройки ещё не прочитаны.
+ */
+function LoadingScreen() {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
+  return (
+    <View style={styles.loading}>
+      <View style={styles.loadingMark} />
+      <ActivityIndicator color={palette.yellow} size="large" />
+    </View>
+  );
+}
+
+/**
+ * Создаёт аудиоплеер только после загрузки настроек.
+ * Это уменьшает нагрузку на первый запуск Android и не блокирует онбординг.
+ */
+function RootContent() {
+  const { hydrated } = useApp();
+
+  if (!hydrated) return <LoadingScreen />;
+
+  return (
+    <AudioProvider>
+      <AppNavigation />
+    </AudioProvider>
+  );
+}
+
+/**
  * Подключает глобальные контексты настроек и аудио ко всему приложению.
  * Это самая верхняя точка React-дерева Lulla.
  */
 export default function RootLayout() {
   return (
     <AppProvider>
-      <AudioProvider>
-        <AppNavigation />
-      </AudioProvider>
+      <RootContent />
     </AppProvider>
   );
 }
@@ -96,10 +115,11 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     gap: 28,
     backgroundColor: palette.navy,
   },
-  moon: {
+  loadingMark: {
     width: 84,
     height: 84,
-    borderRadius: 42,
+    borderRadius: 24,
+    transform: [{ rotate: '45deg' }],
     backgroundColor: palette.yellow,
     shadowColor: palette.yellow,
     shadowOpacity: 0.3,

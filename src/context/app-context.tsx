@@ -15,12 +15,23 @@ import { copy } from '@/src/data/copy';
 import { loadSettings, saveSettings } from '@/src/services/storage';
 import type { Language, RepeatMode, StoredSettings, ThemeMode } from '@/src/types';
 
-const defaultLanguage: Language = Intl.DateTimeFormat()
-  .resolvedOptions()
-  .locale.toLowerCase()
-  .startsWith('ru')
-  ? 'ru'
-  : 'en';
+const SETTINGS_LOAD_TIMEOUT_MS = 2500;
+
+/**
+ * Безопасно определяет язык устройства.
+ * Если Android не отдаёт локаль, приложение всё равно запускается на русском языке.
+ */
+function detectDefaultLanguage(): Language {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith('ru')
+      ? 'ru'
+      : 'en';
+  } catch {
+    return 'ru';
+  }
+}
+
+const defaultLanguage = detectDefaultLanguage();
 
 const defaults: StoredSettings = {
   language: defaultLanguage,
@@ -68,15 +79,32 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [hydrated, setHydrated] = useState(false);
   const initialLoad = useRef(true);
 
-  // При первом запуске читаем ранее сохранённые настройки из памяти устройства.
+  // При первом запуске читаем настройки, но не позволяем медленному хранилищу удерживать заставку.
   useEffect(() => {
-    loadSettings().then((stored) => {
+    let finished = false;
+
+    /**
+     * Завершает загрузку один раз и переводит приложение к основному интерфейсу.
+     */
+    const finishHydration = (stored: StoredSettings | null) => {
+      if (finished) return;
+      finished = true;
       if (stored) {
         setSettings({ ...defaults, ...stored });
       }
       setHydrated(true);
       initialLoad.current = false;
-    });
+    };
+
+    const timeout = setTimeout(() => finishHydration(null), SETTINGS_LOAD_TIMEOUT_MS);
+    loadSettings()
+      .then(finishHydration)
+      .finally(() => clearTimeout(timeout));
+
+    return () => {
+      finished = true;
+      clearTimeout(timeout);
+    };
   }, []);
 
   // После любого изменения настроек сохраняем их с небольшой задержкой.
