@@ -19,7 +19,7 @@ import { getStory } from '@/src/data/stories';
 export default function StoryDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language, t, isFavorite, toggleFavorite, progress } = useApp();
-  const { startStory } = useAudio();
+  const { startStory, addToQueue, removeFromQueue, isQueued } = useAudio();
   const story = getStory(id);
 
   if (!story) {
@@ -37,6 +37,14 @@ export default function StoryDetailsScreen() {
   const play = async () => {
     await startStory(story);
     router.push('/player');
+  };
+
+  /**
+   * Добавляет сказку в очередь или убирает её оттуда при повторном нажатии.
+   */
+  const toggleQueue = () => {
+    if (isQueued(story.id)) removeFromQueue(story.id);
+    else addToQueue(story);
   };
 
   return (
@@ -89,6 +97,12 @@ export default function StoryDetailsScreen() {
           label={progress[story.id] ? t('continueListening') : t('startListening')}
           icon="play"
           onPress={play}
+        />
+        <PrimaryButton
+          label={isQueued(story.id) ? t('removeFromQueue') : t('addToQueue')}
+          icon={isQueued(story.id) ? 'close-circle-outline' : 'list-outline'}
+          variant="secondary"
+          onPress={toggleQueue}
         />
         <PrimaryButton
           label={t('read')}

@@ -16,7 +16,7 @@ import { useAudio } from '@/src/context/audio-context';
 export function MiniPlayer() {
   const insets = useSafeAreaInsets();
   const { language } = useApp();
-  const { activeStory, playing, currentTime, duration, toggle, close } = useAudio();
+  const { activeStory, playing, currentTime, duration, queue, toggle, close } = useAudio();
 
   if (!activeStory) return null;
 
@@ -28,7 +28,14 @@ export function MiniPlayer() {
       accessibilityLabel={activeStory.title[language]}
       onPress={() => router.push('/player')}
       style={[styles.container, { bottom: 72 + Math.max(insets.bottom, 8) }]}>
-      <Image source={activeStory.coverImage} style={styles.cover} contentFit="cover" />
+      <View style={styles.coverWrap}>
+        <Image source={activeStory.coverImage} style={styles.cover} contentFit="cover" />
+        {queue.length ? (
+          <View style={styles.queueBadge}>
+            <Text style={styles.queueBadgeText}>{queue.length}</Text>
+          </View>
+        ) : null}
+      </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
           {activeStory.title[language]}
@@ -82,6 +89,29 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 12,
+  },
+  coverWrap: {
+    width: 50,
+    height: 50,
+  },
+  queueBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.coral,
+    borderWidth: 2,
+    borderColor: palette.navyLight,
+  },
+  queueBadgeText: {
+    color: palette.white,
+    fontSize: 9,
+    fontWeight: '900',
   },
   info: {
     flex: 1,
