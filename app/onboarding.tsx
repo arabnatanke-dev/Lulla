@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/src/components/buttons';
-import { palette } from '@/src/constants/theme';
+import type { ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 
 /**
@@ -23,13 +23,14 @@ import { useApp } from '@/src/context/app-context';
  */
 export default function OnboardingScreen() {
   const { width } = useWindowDimensions();
-  const { completeOnboarding, t } = useApp();
+  const { completeOnboarding, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
 
   const slides = [
     {
-      icon: 'moon' as const,
+      icon: 'bed-outline' as const,
       title: t('onboardingOneTitle'),
       text: t('onboardingOneText'),
       colors: ['#162453', '#695AA0'] as const,
@@ -93,7 +94,7 @@ export default function OnboardingScreen() {
             <LinearGradient colors={[...slide.colors]} style={styles.art}>
               <View style={styles.stars}>
                 <Ionicons name="sparkles" size={24} color={palette.yellow} />
-                <Ionicons name="star" size={12} color={palette.cream} />
+                <Ionicons name="star" size={12} color={palette.white} />
                 <Ionicons name="sparkles" size={17} color={palette.lavender} />
               </View>
               <View style={styles.iconCircle}>
@@ -125,7 +126,10 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили онбординга для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: palette.cream,

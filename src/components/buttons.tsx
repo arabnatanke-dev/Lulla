@@ -9,7 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
+import { useApp } from '@/src/context/app-context';
 
 interface PrimaryButtonProps extends PressableProps {
   label: string;
@@ -30,6 +31,9 @@ export function PrimaryButton({
   disabled,
   ...props
 }: PrimaryButtonProps) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -46,7 +50,7 @@ export function PrimaryButton({
         <Ionicons
           name={icon}
           size={19}
-          color={variant === 'primary' ? palette.white : palette.navy}
+          color={variant === 'primary' ? palette.white : palette.text}
         />
       ) : null}
       <Text style={[styles.label, variant !== 'primary' && styles.darkLabel]}>{label}</Text>
@@ -68,29 +72,37 @@ interface RoundButtonProps extends PressableProps {
  */
 export function RoundButton({
   icon,
-  color = palette.navy,
-  backgroundColor = palette.white,
+  color,
+  backgroundColor,
   size = 46,
   style,
   ...props
 }: RoundButtonProps) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+  const resolvedColor = color ?? palette.text;
+  const resolvedBackground = backgroundColor ?? palette.surface;
+
   return (
     <Pressable
       accessibilityRole="button"
       hitSlop={6}
       style={({ pressed }) => [
         styles.round,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: resolvedBackground },
         pressed && styles.pressed,
         style,
       ]}
       {...props}>
-      <Ionicons name={icon} size={Math.round(size * 0.48)} color={color} />
+      <Ionicons name={icon} size={Math.round(size * 0.48)} color={resolvedColor} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили кнопок для активной светлой или тёмной темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   button: {
     minHeight: 52,
     paddingHorizontal: 22,
@@ -104,7 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.navy,
   },
   secondary: {
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.line,
   },
@@ -117,7 +129,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   darkLabel: {
-    color: palette.navy,
+    color: palette.text,
   },
   pressed: {
     opacity: 0.78,

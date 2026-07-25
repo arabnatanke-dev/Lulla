@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RoundButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
 import { getStory } from '@/src/data/stories';
@@ -22,8 +22,9 @@ const sizes = {
  */
 export default function ReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { language, t, textSize, setTextSize } = useApp();
+  const { language, t, textSize, setTextSize, colors: palette } = useApp();
   const { activeStory, playing, startStory, toggle, currentTime, duration } = useAudio();
+  const styles = createStyles(palette);
   const story = getStory(id);
 
   if (!story) return null;
@@ -94,7 +95,7 @@ export default function ReaderScreen() {
           </Text>
         ))}
         <View style={styles.endMark}>
-          <Ionicons name="moon" size={22} color={palette.purple} />
+          <Ionicons name="book-outline" size={22} color={palette.purple} />
           <View style={styles.endLine} />
           <Ionicons name="sparkles" size={18} color={palette.yellow} />
         </View>
@@ -103,7 +104,10 @@ export default function ReaderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили режима чтения для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     padding: 4,
     borderRadius: radii.pill,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.line,
   },
@@ -179,7 +183,7 @@ const styles = StyleSheet.create({
     color: palette.white,
   },
   paper: {
-    backgroundColor: '#FFFCF5',
+    backgroundColor: palette.surface,
     borderRadius: radii.lg,
     paddingHorizontal: 22,
     paddingVertical: 26,
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
   },
   paragraph: {
-    color: '#27304A',
+    color: palette.text,
     marginBottom: 18,
   },
   endMark: {

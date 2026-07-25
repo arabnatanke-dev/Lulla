@@ -5,7 +5,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { palette, radii, shadows } from '@/src/constants/theme';
+import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
 
@@ -15,8 +15,9 @@ import { useAudio } from '@/src/context/audio-context';
  */
 export function MiniPlayer() {
   const insets = useSafeAreaInsets();
-  const { language } = useApp();
+  const { language, colors: palette } = useApp();
   const { activeStory, playing, currentTime, duration, queue, toggle, close } = useAudio();
+  const styles = createStyles(palette);
 
   if (!activeStory) return null;
 
@@ -70,7 +71,10 @@ export function MiniPlayer() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили мини-плеера для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 12,

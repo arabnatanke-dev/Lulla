@@ -2,7 +2,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { palette } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 
 /**
@@ -10,7 +9,7 @@ import { useApp } from '@/src/context/app-context';
  * Подписи вкладок автоматически меняются вместе с языком приложения.
  */
 export default function TabLayout() {
-  const { t } = useApp();
+  const { t, colors: palette } = useApp();
 
   return (
     <Tabs
@@ -28,7 +27,7 @@ export default function TabLayout() {
           paddingTop: 8,
           paddingBottom: 8,
           borderTopColor: palette.line,
-          backgroundColor: palette.white,
+          backgroundColor: palette.surface,
         },
         tabBarHideOnKeyboard: true,
       }}>

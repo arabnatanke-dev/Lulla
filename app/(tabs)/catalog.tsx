@@ -13,7 +13,7 @@ import {
 import { PrimaryButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
 import { StoryCard } from '@/src/components/story-card';
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { categoryLabels } from '@/src/data/copy';
 import { stories } from '@/src/data/stories';
@@ -27,7 +27,8 @@ const categories: CategoryId[] = ['all', 'bedtime', 'adventures', 'magic', 'anim
  */
 export default function CatalogScreen() {
   const { width } = useWindowDimensions();
-  const { language, t } = useApp();
+  const { language, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryId>('all');
 
@@ -102,7 +103,7 @@ export default function CatalogScreen() {
         renderItem={({ item }) => <StoryCard story={item} style={{ width: cardWidth }} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="moon-outline" size={48} color={palette.lavender} />
+            <Ionicons name="book-outline" size={48} color={palette.lavender} />
             <Text style={styles.emptyTitle}>{t('nothingFound')}</Text>
             <PrimaryButton
               label={t('resetSearch')}
@@ -119,7 +120,10 @@ export default function CatalogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили каталога для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   header: {
     paddingHorizontal: 18,
     paddingTop: 12,
@@ -135,7 +139,7 @@ const styles = StyleSheet.create({
   },
   count: {
     color: palette.purple,
-    backgroundColor: '#EEE8F8',
+    backgroundColor: palette.iconBubble,
     fontSize: 13,
     fontWeight: '800',
     paddingHorizontal: 10,
@@ -146,7 +150,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 18,
     height: 50,
     borderRadius: radii.md,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.line,
     paddingHorizontal: 14,
@@ -161,6 +165,7 @@ const styles = StyleSheet.create({
   },
   filterList: {
     flexGrow: 0,
+    minHeight: 67,
   },
   filters: {
     paddingHorizontal: 18,
@@ -171,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 39,
     borderRadius: radii.pill,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderWidth: 1,
     borderColor: palette.line,
     justifyContent: 'center',

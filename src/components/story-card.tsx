@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { palette, radii, shadows } from '@/src/constants/theme';
+import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import type { Story } from '@/src/types';
 
@@ -20,7 +20,8 @@ interface StoryCardProps {
  * Карточка открывает страницу сказки, а сердечко меняет состояние избранного.
  */
 export function StoryCard({ story, compact = false, horizontal = false, style }: StoryCardProps) {
-  const { language, toggleFavorite, isFavorite, t } = useApp();
+  const { language, toggleFavorite, isFavorite, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const favorite = isFavorite(story.id);
 
   return (
@@ -54,7 +55,7 @@ export function StoryCard({ story, compact = false, horizontal = false, style }:
           <Ionicons
             name={favorite ? 'heart' : 'heart-outline'}
             size={20}
-            color={favorite ? palette.coral : palette.navy}
+            color={favorite ? palette.coral : palette.text}
           />
         </Pressable>
       </View>
@@ -85,9 +86,12 @@ export function StoryCard({ story, compact = false, horizontal = false, style }:
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили карточек сказок для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderRadius: radii.md,
     overflow: 'hidden',
     ...shadows.card,
@@ -125,7 +129,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: palette.surfaceElevated,
   },
   favoritePressed: {
     transform: [{ scale: 0.9 }],

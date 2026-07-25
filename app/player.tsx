@@ -8,7 +8,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoundButton } from '@/src/components/buttons';
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
 import type { RepeatMode, Story } from '@/src/types';
@@ -20,7 +20,14 @@ const rates = [0.75, 1, 1.25, 1.5];
  * Показывает полноэкранный аудиоплеер с прогрессом, перемоткой, скоростью и таймером сна.
  */
 export default function PlayerScreen() {
-  const { language, t, playbackRate, toggleFavorite, isFavorite } = useApp();
+  const {
+    language,
+    t,
+    playbackRate,
+    toggleFavorite,
+    isFavorite,
+    colors: palette,
+  } = useApp();
   const {
     activeStory,
     playing,
@@ -43,6 +50,7 @@ export default function PlayerScreen() {
   } = useAudio();
   const [timerVisible, setTimerVisible] = useState(false);
   const [queueVisible, setQueueVisible] = useState(false);
+  const styles = createStyles(palette);
 
   if (!activeStory) {
     return (
@@ -268,7 +276,8 @@ function QueueModal({
   onRemove: (storyId: string) => void;
   onClear: () => void;
 }) {
-  const { language, t } = useApp();
+  const { language, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -332,7 +341,7 @@ function QueueModal({
             </>
           ) : (
             <View style={styles.queueEmpty}>
-              <Ionicons name="moon-outline" size={42} color={palette.purple} />
+              <Ionicons name="book-outline" size={42} color={palette.purple} />
               <Text style={styles.queueEmptyTitle}>{t('queueEmpty')}</Text>
               <Text style={styles.queueEmptyText}>{t('queueEmptyText')}</Text>
             </View>
@@ -358,7 +367,8 @@ function TimerModal({
   value: 5 | 10 | 15 | 30 | 'end' | null;
   onSelect: (value: 5 | 10 | 15 | 30 | 'end' | null) => void;
 }) {
-  const { t } = useApp();
+  const { t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const choices = [
     { value: 5 as const, label: `5 ${t('min')}` },
     { value: 10 as const, label: `10 ${t('min')}` },
@@ -395,7 +405,10 @@ function TimerModal({
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили плеера и его окон для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   gradient: {
     flex: 1,
   },
@@ -581,7 +594,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5,8,22,0.55)',
   },
   modal: {
-    backgroundColor: palette.cream,
+    backgroundColor: palette.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 22,
@@ -627,7 +640,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEE8F8',
+    backgroundColor: palette.iconBubble,
   },
   queueOrderText: {
     color: palette.purple,
@@ -667,7 +680,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FFF0EC',
+    backgroundColor: palette.warningBubble,
   },
   clearQueueText: {
     color: palette.coral,

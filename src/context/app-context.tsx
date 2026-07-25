@@ -8,10 +8,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useColorScheme } from 'react-native';
 
+import { darkPalette, lightPalette, type ThemeColors } from '@/src/constants/theme';
 import { copy } from '@/src/data/copy';
 import { loadSettings, saveSettings } from '@/src/services/storage';
-import type { Language, RepeatMode, StoredSettings } from '@/src/types';
+import type { Language, RepeatMode, StoredSettings, ThemeMode } from '@/src/types';
 
 const defaultLanguage: Language = Intl.DateTimeFormat()
   .resolvedOptions()
@@ -27,12 +29,15 @@ const defaults: StoredSettings = {
   progress: {},
   playbackRate: 1,
   textSize: 'medium',
+  themeMode: 'system',
   queueIds: [],
   repeatMode: 'off',
 };
 
 interface AppContextValue extends StoredSettings {
   hydrated: boolean;
+  colors: ThemeColors;
+  isDark: boolean;
   t: (key: string) => string;
   setLanguage: (language: Language) => void;
   completeOnboarding: () => void;
@@ -42,6 +47,7 @@ interface AppContextValue extends StoredSettings {
   resetProgress: () => void;
   setPlaybackRate: (rate: number) => void;
   setTextSize: (size: StoredSettings['textSize']) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   setQueueIds: (storyIds: string[]) => void;
   addToQueue: (storyId: string) => void;
   removeFromQueue: (storyId: string) => void;
@@ -57,6 +63,7 @@ const AppContext = createContext<AppContextValue | null>(null);
  * Здесь находятся язык, избранное, прогресс прослушивания и размер текста.
  */
 export function AppProvider({ children }: PropsWithChildren) {
+  const systemColorScheme = useColorScheme();
   const [settings, setSettings] = useState(defaults);
   const [hydrated, setHydrated] = useState(false);
   const initialLoad = useRef(true);
@@ -133,11 +140,18 @@ export function AppProvider({ children }: PropsWithChildren) {
     [patch],
   );
 
+  const isDark =
+    settings.themeMode === 'dark' ||
+    (settings.themeMode === 'system' && systemColorScheme === 'dark');
+  const colors = isDark ? darkPalette : lightPalette;
+
   // Собираем публичный API контекста, которым пользуются экраны приложения.
   const value = useMemo<AppContextValue>(
     () => ({
       ...settings,
       hydrated,
+      colors,
+      isDark,
       t: (key) => copy[settings.language][key] ?? key,
       setLanguage: (language) => patch({ language }),
       completeOnboarding: () => patch({ onboardingComplete: true }),
@@ -157,6 +171,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetProgress: () => patch({ progress: {} }),
       setPlaybackRate: (playbackRate) => patch({ playbackRate }),
       setTextSize: (textSize) => patch({ textSize }),
+      setThemeMode: (themeMode) => patch({ themeMode }),
       setQueueIds,
       addToQueue,
       removeFromQueue,
@@ -167,7 +182,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     [
       addToQueue,
       clearQueue,
+      colors,
       hydrated,
+      isDark,
       patch,
       removeFromQueue,
       setQueueIds,

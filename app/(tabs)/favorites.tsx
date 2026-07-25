@@ -6,7 +6,7 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
 import { StoryCard } from '@/src/components/story-card';
-import { palette } from '@/src/constants/theme';
+import type { ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { stories } from '@/src/data/stories';
 
@@ -15,7 +15,8 @@ import { stories } from '@/src/data/stories';
  * Если список пуст, предлагает перейти в каталог.
  */
 export default function FavoritesScreen() {
-  const { favorites, t } = useApp();
+  const { favorites, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const items = stories.filter((story) => favorites.includes(story.id));
 
   return (
@@ -47,7 +48,10 @@ export default function FavoritesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили избранного для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   title: {
     color: palette.text,
     fontSize: 30,
@@ -80,7 +84,7 @@ const styles = StyleSheet.create({
     borderRadius: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEE8F8',
+    backgroundColor: palette.iconBubble,
     marginBottom: 5,
   },
   emptyTitle: {

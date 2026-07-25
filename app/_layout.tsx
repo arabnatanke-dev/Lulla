@@ -5,7 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { MiniPlayer } from '@/src/components/mini-player';
-import { palette } from '@/src/constants/theme';
+import type { ThemeColors } from '@/src/constants/theme';
 import { AppProvider, useApp } from '@/src/context/app-context';
 import { AudioProvider } from '@/src/context/audio-context';
 
@@ -18,8 +18,9 @@ export const unstable_settings = {
  * Пока настройки загружаются, отображает простой экран загрузки.
  */
 function AppNavigation() {
-  const { hydrated, onboardingComplete } = useApp();
+  const { hydrated, onboardingComplete, colors: palette, isDark } = useApp();
   const segments = useSegments();
+  const styles = createStyles(palette);
 
   // Перенаправляем нового пользователя в онбординг, а прошедшего — к основным вкладкам.
   useEffect(() => {
@@ -62,14 +63,14 @@ function AppNavigation() {
         <Stack.Screen name="player" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
       {showMiniPlayer ? <MiniPlayer /> : null}
-      <StatusBar style={current === 'player' ? 'light' : 'dark'} />
+      <StatusBar style={current === 'player' || isDark ? 'light' : 'dark'} />
     </View>
   );
 }
 
 /**
  * Подключает глобальные контексты настроек и аудио ко всему приложению.
- * Это самая верхняя точка React-дерева Dreamy Tales.
+ * Это самая верхняя точка React-дерева Lulla.
  */
 export default function RootLayout() {
   return (
@@ -81,7 +82,10 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт корневые стили навигации для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   root: {
     flex: 1,
   },

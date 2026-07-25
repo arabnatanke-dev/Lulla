@@ -4,19 +4,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { RoundButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 
 const legalText = {
   privacy: {
     ru: [
-      'Dreamy Tales не запрашивает имя, дату рождения, фотографию, адрес, контакты, геолокацию, доступ к камере или микрофону.',
+      'Lulla не запрашивает имя, дату рождения, фотографию, адрес, контакты, геолокацию, доступ к камере или микрофону.',
       'Выбранный язык, избранные сказки, размер текста, скорость и позиции прослушивания сохраняются только в локальной памяти устройства.',
       'В текущей версии нет регистрации, рекламы, аналитики и передачи пользовательских данных на сервер.',
       'Для вопросов о конфиденциальности напишите создателю приложения Abdulla Chukhray на arabnatanke@gmail.com.',
     ],
     en: [
-      'Dreamy Tales does not request a name, date of birth, photo, address, contacts, precise location, camera access, or microphone access.',
+      'Lulla does not request a name, date of birth, photo, address, contacts, precise location, camera access, or microphone access.',
       'The selected language, favorites, text size, playback speed, and listening positions are stored only in local device storage.',
       'This version has no registration, advertising, analytics, or transfer of user data to a server.',
       'For privacy questions, contact the app creator Abdulla Chukhray at arabnatanke@gmail.com.',
@@ -44,7 +44,8 @@ const legalText = {
  */
 export default function LegalScreen() {
   const { type } = useLocalSearchParams<{ type: string }>();
-  const { language, t } = useApp();
+  const { language, t, colors: palette } = useApp();
+  const styles = createStyles(palette);
   const safeType = type === 'terms' ? 'terms' : 'privacy';
   const title = safeType === 'terms' ? t('terms') : t('privacyPolicy');
 
@@ -55,7 +56,7 @@ export default function LegalScreen() {
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.paper}>
-        <Text style={styles.updated}>Dreamy Tales · Abdulla Chukhray · 25.07.2026</Text>
+        <Text style={styles.updated}>Lulla · Abdulla Chukhray · 25.07.2026</Text>
         {legalText[safeType][language].map((paragraph, index) => (
           <Text key={index} style={styles.paragraph}>
             {paragraph}
@@ -66,7 +67,10 @@ export default function LegalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили юридических документов для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 10,
@@ -85,7 +89,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   paper: {
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: palette.line,

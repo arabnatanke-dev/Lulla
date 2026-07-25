@@ -4,9 +4,9 @@ import React from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/src/components/screen';
-import { palette, radii } from '@/src/constants/theme';
+import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
-import type { Language, StoredSettings } from '@/src/types';
+import type { Language, StoredSettings, ThemeMode } from '@/src/types';
 
 /**
  * Содержит выбор языка, размер текста, сброс прогресса и информацию о приложении.
@@ -15,11 +15,15 @@ export default function SettingsScreen() {
   const {
     language,
     setLanguage,
+    themeMode,
+    setThemeMode,
     textSize,
     setTextSize,
     resetProgress,
     t,
+    colors: palette,
   } = useApp();
+  const styles = createStyles(palette);
 
   /**
    * Просит подтверждение перед удалением всех сохранённых позиций прослушивания.
@@ -44,7 +48,7 @@ export default function SettingsScreen() {
   const openFeedback = () => {
     Linking.openURL(
       `mailto:arabnatanke@gmail.com?subject=${encodeURIComponent(
-        language === 'ru' ? 'Отзыв о приложении Dreamy Tales' : 'Dreamy Tales feedback',
+        language === 'ru' ? 'Отзыв о приложении Lulla' : 'Lulla feedback',
       )}`,
     );
   };
@@ -61,6 +65,18 @@ export default function SettingsScreen() {
           ]}
           value={language}
           onChange={(value) => setLanguage(value as Language)}
+        />
+      </SettingsSection>
+
+      <SettingsSection icon="color-palette-outline" title={t('theme')}>
+        <Segmented
+          options={[
+            { value: 'system', label: t('themeSystem') },
+            { value: 'light', label: t('themeLight') },
+            { value: 'dark', label: t('themeDark') },
+          ]}
+          value={themeMode}
+          onChange={(value) => setThemeMode(value as ThemeMode)}
         />
       </SettingsSection>
 
@@ -136,6 +152,9 @@ function SettingsSection({
   title,
   children,
 }: React.PropsWithChildren<{ icon: keyof typeof Ionicons.glyphMap; title: string }>) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionTitleRow}>
@@ -162,6 +181,9 @@ function Segmented({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.segmented}>
       {options.map((option) => {
@@ -181,7 +203,10 @@ function Segmented({
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили настроек для выбранной светлой или тёмной палитры.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 12,
@@ -194,7 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   section: {
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderRadius: radii.md,
     padding: 16,
     borderWidth: 1,
@@ -217,14 +242,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEE8F8',
+    backgroundColor: palette.iconBubble,
   },
   warningIcon: {
-    backgroundColor: '#FCEDE8',
+    backgroundColor: palette.warningBubble,
   },
   row: {
     minHeight: 68,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     borderRadius: radii.md,
     paddingHorizontal: 16,
     flexDirection: 'row',

@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
 import { StoryCard } from '@/src/components/story-card';
-import { palette, radii, shadows } from '@/src/constants/theme';
+import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
 import { stories } from '@/src/data/stories';
@@ -17,8 +17,9 @@ import { stories } from '@/src/data/stories';
  * Собирает главную страницу: приветствие, сказку вечера, популярные и короткие истории.
  */
 export default function HomeScreen() {
-  const { language, t } = useApp();
+  const { language, t, colors: palette } = useApp();
   const { startStory } = useAudio();
+  const styles = createStyles(palette);
   const featured = stories.find((story) => story.isFeatured) ?? stories[0];
   const shortStories = stories.filter((story) => story.durationSeconds[language] <= 235);
 
@@ -42,7 +43,7 @@ export default function HomeScreen() {
           accessibilityLabel={t('settings')}
           onPress={() => router.push('/settings')}
           style={styles.settingsButton}>
-          <Ionicons name="moon" size={22} color={palette.navy} />
+          <Ionicons name="options-outline" size={22} color={palette.text} />
         </Pressable>
       </View>
 
@@ -102,6 +103,9 @@ export default function HomeScreen() {
  * Рисует единый заголовок секции на главной странице.
  */
 function SectionHeader({ title }: { title: string }) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -110,7 +114,10 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили главного экрана для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 12,
@@ -139,7 +146,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.card,
@@ -168,7 +175,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   badgeText: {
-    color: palette.cream,
+    color: palette.white,
     fontSize: 11,
     fontWeight: '800',
   },
@@ -187,7 +194,6 @@ const styles = StyleSheet.create({
   },
   heroButton: {
     minHeight: 46,
-    backgroundColor: palette.yellow,
   },
   heroImage: {
     position: 'absolute',

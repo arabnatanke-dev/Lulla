@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { palette } from '@/src/constants/theme';
+import type { ThemeColors } from '@/src/constants/theme';
+import { useApp } from '@/src/context/app-context';
 
 interface ScreenProps extends PropsWithChildren {
   scroll?: boolean;
@@ -29,6 +30,9 @@ export function Screen({
   style,
   scrollProps,
 }: ScreenProps) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   if (scroll) {
     return (
       <SafeAreaView style={[styles.safe, style]} edges={['top', 'left', 'right']}>
@@ -50,7 +54,10 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт общий фон экранов для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: palette.cream,

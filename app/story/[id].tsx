@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RoundButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
-import { palette, radii, shadows } from '@/src/constants/theme';
+import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
 import { categoryLabels } from '@/src/data/copy';
@@ -18,8 +18,9 @@ import { getStory } from '@/src/data/stories';
  */
 export default function StoryDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { language, t, isFavorite, toggleFavorite, progress } = useApp();
+  const { language, t, isFavorite, toggleFavorite, progress, colors: palette } = useApp();
   const { startStory, addToQueue, removeFromQueue, isQueued } = useAudio();
+  const styles = createStyles(palette);
   const story = getStory(id);
 
   if (!story) {
@@ -59,7 +60,7 @@ export default function StoryDetailsScreen() {
         />
         <RoundButton
           icon={isFavorite(story.id) ? 'heart' : 'heart-outline'}
-          color={isFavorite(story.id) ? palette.coral : palette.navy}
+          color={isFavorite(story.id) ? palette.coral : palette.text}
           accessibilityLabel={t('favorites')}
           onPress={() => toggleFavorite(story.id)}
           style={styles.favorite}
@@ -121,6 +122,9 @@ export default function StoryDetailsScreen() {
  * Рисует один небольшой параметр сказки: длительность, возраст или офлайн-доступ.
  */
 function Meta({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  const { colors: palette } = useApp();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.metaItem}>
       <Ionicons name={icon} size={17} color={palette.purple} />
@@ -129,7 +133,10 @@ function Meta({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: stri
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * Создаёт стили страницы сказки для активной цветовой темы.
+ */
+const createStyles = (palette: ThemeColors) => StyleSheet.create({
   content: {
     paddingBottom: 130,
   },
@@ -193,7 +200,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: palette.white,
+    backgroundColor: palette.surface,
     paddingHorizontal: 11,
     paddingVertical: 8,
     borderRadius: radii.pill,
@@ -214,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 7,
     borderRadius: radii.pill,
-    backgroundColor: '#EEE8F8',
+    backgroundColor: palette.iconBubble,
   },
   categoryText: {
     color: palette.purple,
