@@ -11,7 +11,7 @@ import React, {
 
 import { copy } from '@/src/data/copy';
 import { loadSettings, saveSettings } from '@/src/services/storage';
-import type { Language, StoredSettings } from '@/src/types';
+import type { Language, RepeatMode, StoredSettings } from '@/src/types';
 
 const defaultLanguage: Language = Intl.DateTimeFormat()
   .resolvedOptions()
@@ -27,6 +27,8 @@ const defaults: StoredSettings = {
   progress: {},
   playbackRate: 1,
   textSize: 'medium',
+  queueIds: [],
+  repeatMode: 'off',
 };
 
 interface AppContextValue extends StoredSettings {
@@ -40,6 +42,12 @@ interface AppContextValue extends StoredSettings {
   resetProgress: () => void;
   setPlaybackRate: (rate: number) => void;
   setTextSize: (size: StoredSettings['textSize']) => void;
+  setQueueIds: (storyIds: string[]) => void;
+  addToQueue: (storyId: string) => void;
+  removeFromQueue: (storyId: string) => void;
+  clearQueue: () => void;
+  isQueued: (storyId: string) => boolean;
+  setRepeatMode: (mode: RepeatMode) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -78,6 +86,53 @@ export function AppProvider({ children }: PropsWithChildren) {
     setSettings((current) => ({ ...current, ...next }));
   }, []);
 
+  /**
+   * Полностью заменяет очередь и удаляет из неё пустые или повторяющиеся идентификаторы.
+   */
+  const setQueueIds = useCallback((storyIds: string[]) => {
+    const uniqueIds = [...new Set(storyIds.filter(Boolean))];
+    setSettings((current) => ({ ...current, queueIds: uniqueIds }));
+  }, []);
+
+  /**
+   * Добавляет сказку в конец очереди, если её там ещё нет.
+   */
+  const addToQueue = useCallback((storyId: string) => {
+    setSettings((current) => ({
+      ...current,
+      queueIds: current.queueIds.includes(storyId)
+        ? current.queueIds
+        : [...current.queueIds, storyId],
+    }));
+  }, []);
+
+  /**
+   * Удаляет выбранную сказку из сохранённой очереди.
+   */
+  const removeFromQueue = useCallback((storyId: string) => {
+    setSettings((current) => ({
+      ...current,
+      queueIds: current.queueIds.filter((id) => id !== storyId),
+    }));
+  }, []);
+
+  /**
+   * Очищает всю очередь, не останавливая текущую сказку.
+   */
+  const clearQueue = useCallback(() => {
+    patch({ queueIds: [] });
+  }, [patch]);
+
+  /**
+   * Сохраняет выбранный режим повтора: выключен, одна сказка или вся очередь.
+   */
+  const setRepeatMode = useCallback(
+    (repeatMode: RepeatMode) => {
+      patch({ repeatMode });
+    },
+    [patch],
+  );
+
   // Собираем публичный API контекста, которым пользуются экраны приложения.
   const value = useMemo<AppContextValue>(
     () => ({
@@ -102,8 +157,23 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetProgress: () => patch({ progress: {} }),
       setPlaybackRate: (playbackRate) => patch({ playbackRate }),
       setTextSize: (textSize) => patch({ textSize }),
+      setQueueIds,
+      addToQueue,
+      removeFromQueue,
+      clearQueue,
+      isQueued: (storyId) => settings.queueIds.includes(storyId),
+      setRepeatMode,
     }),
-    [hydrated, patch, settings],
+    [
+      addToQueue,
+      clearQueue,
+      hydrated,
+      patch,
+      removeFromQueue,
+      setQueueIds,
+      setRepeatMode,
+      settings,
+    ],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

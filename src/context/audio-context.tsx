@@ -15,7 +15,9 @@ import React, {
 } from 'react';
 
 import { useApp } from '@/src/context/app-context';
-import type { Story } from '@/src/types';
+import { getStory } from '@/src/data/stories';
+import type { RepeatMode, Story } from '@/src/types';
+import { resolveFinishedPlayback } from '@/src/utils/playback-queue';
 
 type TimerChoice = 5 | 10 | 15 | 30 | 'end' | null;
 
@@ -26,8 +28,17 @@ interface AudioContextValue {
   duration: number;
   timerChoice: TimerChoice;
   timerRemaining: number | null;
+  queue: Story[];
+  repeatMode: RepeatMode;
   startStory: (story: Story) => Promise<void>;
-  toggle: () => void;
+  playNext: () => Promise<void>;
+  playQueuedStory: (storyId: string) => Promise<void>;
+  addToQueue: (story: Story) => void;
+  removeFromQueue: (storyId: string) => void;
+  clearQueue: () => void;
+  isQueued: (storyId: string) => boolean;
+  setRepeatMode: (mode: RepeatMode) => void;
+  toggle: () => Promise<void>;
   seekTo: (seconds: number) => Promise<void>;
   skipBy: (seconds: number) => Promise<void>;
   close: () => void;
@@ -42,14 +53,36 @@ const AudioContext = createContext<AudioContextValue | null>(null);
  * Благодаря этому две сказки не могут играть одновременно, а мини-плеер видит общее состояние.
  */
 export function AudioProvider({ children }: PropsWithChildren) {
-  const { language, playbackRate, progress, setPlaybackRate, setProgress } = useApp();
+  const {
+    language,
+    playbackRate,
+    progress,
+    queueIds,
+    repeatMode,
+    setPlaybackRate,
+    setProgress,
+    setQueueIds,
+    addToQueue: addStoryIdToQueue,
+    removeFromQueue,
+    clearQueue,
+    isQueued,
+    setRepeatMode,
+  } = useApp();
   const [activeStory, setActiveStory] = useState<Story | null>(null);
   const [timerChoice, setTimerChoiceState] = useState<TimerChoice>(null);
   const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
   const lastSavedSecond = useRef(0);
+  const handledFinish = useRef(false);
   const player = useAudioPlayer(null, { updateInterval: 500 });
   const status = useAudioPlayerStatus(player);
+  const queue = useMemo(
+    () =>
+      queueIds
+        .map((storyId) => getStory(storyId))
+        .filter((story): story is Story => Boolean(story)),
+    [queueIds],
+  );
 
   // Настраиваем воспроизведение в беззвучном режиме iOS и в фоне.
   useEffect(() => {
@@ -74,13 +107,6 @@ export function AudioProvider({ children }: PropsWithChildren) {
       setProgress(activeStory.id, second);
     }
   }, [activeStory, setProgress, status.currentTime]);
-
-  // После окончания сказки сбрасываем её прогресс и таймер «до конца».
-  useEffect(() => {
-    if (!activeStory || !status.didJustFinish) return;
-    setProgress(activeStory.id, 0);
-    if (timerChoice === 'end') setTimerChoiceState(null);
-  }, [activeStory, setProgress, status.didJustFinish, timerChoice]);
 
   // Считаем оставшееся время таймера и останавливаем звук в нужный момент.
   useEffect(() => {
@@ -114,7 +140,7 @@ export function AudioProvider({ children }: PropsWithChildren) {
       const isNew = activeStory?.id !== story.id;
       if (isNew) {
         if (activeStory) {
-          setProgress(activeStory.id, status.currentTime || 0);
+          setProgress(activeStory.id, status.didJustFinish ? 0 : status.currentTime || 0);
         }
         player.replace(story.audio[language]);
         setActiveStory(story);
@@ -129,6 +155,9 @@ export function AudioProvider({ children }: PropsWithChildren) {
         title: story.title[language],
         artist: 'Dreamy Tales',
         albumTitle: language === 'ru' ? 'Сказки перед сном' : 'Bedtime stories',
+      }, {
+        showSeekBackward: true,
+        showSeekForward: true,
       });
       player.play();
     },
@@ -143,6 +172,95 @@ export function AudioProvider({ children }: PropsWithChildren) {
       status.didJustFinish,
     ],
   );
+
+  /**
+   * Запускает первую сказку из очереди и сразу удаляет её из списка ожидания.
+   */
+  const playNext = useCallback(async () => {
+    const nextStory = queue[0];
+    if (!nextStory) return;
+    setQueueIds(queueIds.filter((storyId) => storyId !== nextStory.id));
+    await startStory(nextStory);
+  }, [queue, queueIds, setQueueIds, startStory]);
+
+  /**
+   * Запускает выбранную позицию очереди, не меняя порядок остальных сказок.
+   */
+  const playQueuedStory = useCallback(
+    async (storyId: string) => {
+      const story = getStory(storyId);
+      if (!story) return;
+      removeFromQueue(storyId);
+      await startStory(story);
+    },
+    [removeFromQueue, startStory],
+  );
+
+  /**
+   * Добавляет объект сказки в сохранённую очередь по его идентификатору.
+   */
+  const addToQueue = useCallback(
+    (story: Story) => {
+      addStoryIdToQueue(story.id);
+    },
+    [addStoryIdToQueue],
+  );
+
+  // После окончания выбираем повтор текущей сказки, следующую в очереди или обычную остановку.
+  useEffect(() => {
+    if (!status.didJustFinish) {
+      handledFinish.current = false;
+      return;
+    }
+    if (!activeStory || handledFinish.current) return;
+    handledFinish.current = true;
+
+    /**
+     * Завершает текущую сказку и применяет выбранный пользователем сценарий продолжения.
+     */
+    const handleFinishedStory = async () => {
+      setProgress(activeStory.id, 0);
+      lastSavedSecond.current = 0;
+      const action = resolveFinishedPlayback({
+        activeStoryId: activeStory.id,
+        queueIds,
+        repeatMode,
+        stopAtEnd: timerChoice === 'end',
+      });
+
+      if (timerChoice === 'end') {
+        setTimerChoiceState(null);
+        setTimerEndAt(null);
+      }
+
+      if (action.kind === 'replay') {
+        await player.seekTo(0);
+        player.play();
+        return;
+      }
+
+      if (action.kind === 'next') {
+        const nextStory = getStory(action.nextStoryId);
+        if (!nextStory) return;
+        setQueueIds(action.nextQueueIds);
+        await startStory(nextStory);
+      }
+    };
+
+    handleFinishedStory().catch((error) =>
+      console.warn('Unable to continue playback queue', error),
+    );
+  }, [
+    activeStory,
+    player,
+    queueIds,
+    repeatMode,
+    setProgress,
+    setQueueIds,
+    startStory,
+    status.didJustFinish,
+    timerChoice,
+  ]);
 
   // При смене языка подменяем аудиофайл, сохраняя текущую позицию и состояние паузы.
   useEffect(() => {
@@ -187,6 +305,49 @@ export function AudioProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  /**
+   * Переключает воспроизведение и после завершения начинает сказку с самого начала.
+   */
+  const toggle = useCallback(async () => {
+    if (!activeStory) return;
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+    if (status.didJustFinish) await player.seekTo(0);
+    player.play();
+  }, [activeStory, player, status.didJustFinish, status.playing]);
+
+  /**
+   * Перемещает воспроизведение на точную позицию, не позволяя уйти в отрицательное время.
+   */
+  const seekTo = useCallback(
+    (seconds: number) => player.seekTo(Math.max(0, seconds)),
+    [player],
+  );
+
+  /**
+   * Перематывает сказку относительно текущей позиции и учитывает её длительность.
+   */
+  const skipBy = useCallback(
+    (seconds: number) =>
+      player.seekTo(
+        Math.max(0, Math.min(status.duration || Infinity, status.currentTime + seconds)),
+      ),
+    [player, status.currentTime, status.duration],
+  );
+
+  /**
+   * Меняет скорость текущего плеера и сохраняет её для следующих запусков.
+   */
+  const setRate = useCallback(
+    (rate: number) => {
+      player.playbackRate = rate;
+      setPlaybackRate(rate);
+    },
+    [player, setPlaybackRate],
+  );
+
   // Формируем набор данных и команд, доступный плееру, читалке и мини-плееру.
   const value = useMemo<AudioContextValue>(
     () => ({
@@ -196,39 +357,47 @@ export function AudioProvider({ children }: PropsWithChildren) {
       duration: status.duration || activeStory?.durationSeconds[language] || 0,
       timerChoice,
       timerRemaining,
+      queue,
+      repeatMode,
       startStory,
-      toggle: () => {
-        if (!activeStory) return;
-        if (status.playing) player.pause();
-        else {
-          if (status.didJustFinish) player.seekTo(0);
-          player.play();
-        }
-      },
-      seekTo: (seconds) => player.seekTo(Math.max(0, seconds)),
-      skipBy: (seconds) =>
-        player.seekTo(Math.max(0, Math.min(status.duration || Infinity, status.currentTime + seconds))),
+      playNext,
+      playQueuedStory,
+      addToQueue,
+      removeFromQueue,
+      clearQueue,
+      isQueued,
+      setRepeatMode,
+      toggle,
+      seekTo,
+      skipBy,
       close,
-      setRate: (rate) => {
-        player.playbackRate = rate;
-        setPlaybackRate(rate);
-      },
+      setRate,
       setSleepTimer,
     }),
     [
       activeStory,
+      addToQueue,
+      clearQueue,
       close,
+      isQueued,
       language,
-      player,
-      setPlaybackRate,
+      playNext,
+      playQueuedStory,
+      queue,
+      removeFromQueue,
+      repeatMode,
+      seekTo,
+      setRate,
+      setRepeatMode,
       setSleepTimer,
+      skipBy,
       startStory,
       status.currentTime,
-      status.didJustFinish,
       status.duration,
       status.playing,
       timerChoice,
       timerRemaining,
+      toggle,
     ],
   );
 

@@ -2,6 +2,7 @@ import type { ImageSourcePropType } from 'react-native';
 
 export type Language = 'ru' | 'en';
 export type LocalizedText = Record<Language, string>;
+export type RepeatMode = 'off' | 'one' | 'all';
 
 export type CategoryId =
   | 'all'
@@ -35,6 +36,8 @@ export interface StoredSettings {
   progress: Record<string, number>;
   playbackRate: number;
   textSize: 'small' | 'medium' | 'large';
+  queueIds: string[];
+  repeatMode: RepeatMode;
 }
 
 export interface AppCopy {
