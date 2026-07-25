@@ -2,7 +2,7 @@
   "expo": {
     "name": "Lulla",
     "slug": "lolli",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/lulla-icon.png",
     "scheme": "lulla",
@@ -30,6 +30,9 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "app.lulla.mobile"
     },
