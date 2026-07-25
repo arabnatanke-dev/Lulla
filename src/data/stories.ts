@@ -17,44 +17,44 @@ const covers: Record<string, number> = {
 
 const audio: Record<string, { ru: number; en: number }> = {
   'lion-and-mouse': {
-    ru: require('@/assets/audio/ru/lion-and-mouse.wav'),
-    en: require('@/assets/audio/en/lion-and-mouse.wav'),
+    ru: require('@/assets/audio/ru/lion-and-mouse.mp3'),
+    en: require('@/assets/audio/en/lion-and-mouse.mp3'),
   },
   'tortoise-and-hare': {
-    ru: require('@/assets/audio/ru/tortoise-and-hare.wav'),
-    en: require('@/assets/audio/en/tortoise-and-hare.wav'),
+    ru: require('@/assets/audio/ru/tortoise-and-hare.mp3'),
+    en: require('@/assets/audio/en/tortoise-and-hare.mp3'),
   },
   'princess-and-pea': {
-    ru: require('@/assets/audio/ru/princess-and-pea.wav'),
-    en: require('@/assets/audio/en/princess-and-pea.wav'),
+    ru: require('@/assets/audio/ru/princess-and-pea.mp3'),
+    en: require('@/assets/audio/en/princess-and-pea.mp3'),
   },
   'ugly-duckling': {
-    ru: require('@/assets/audio/ru/ugly-duckling.wav'),
-    en: require('@/assets/audio/en/ugly-duckling.wav'),
+    ru: require('@/assets/audio/ru/ugly-duckling.mp3'),
+    en: require('@/assets/audio/en/ugly-duckling.mp3'),
   },
   'emperors-new-clothes': {
-    ru: require('@/assets/audio/ru/emperors-new-clothes.wav'),
-    en: require('@/assets/audio/en/emperors-new-clothes.wav'),
+    ru: require('@/assets/audio/ru/emperors-new-clothes.mp3'),
+    en: require('@/assets/audio/en/emperors-new-clothes.mp3'),
   },
   'bremen-musicians': {
-    ru: require('@/assets/audio/ru/bremen-musicians.wav'),
-    en: require('@/assets/audio/en/bremen-musicians.wav'),
+    ru: require('@/assets/audio/ru/bremen-musicians.mp3'),
+    en: require('@/assets/audio/en/bremen-musicians.mp3'),
   },
   'frog-prince': {
-    ru: require('@/assets/audio/ru/frog-prince.wav'),
-    en: require('@/assets/audio/en/frog-prince.wav'),
+    ru: require('@/assets/audio/ru/frog-prince.mp3'),
+    en: require('@/assets/audio/en/frog-prince.mp3'),
   },
   'elves-and-shoemaker': {
-    ru: require('@/assets/audio/ru/elves-and-shoemaker.wav'),
-    en: require('@/assets/audio/en/elves-and-shoemaker.wav'),
+    ru: require('@/assets/audio/ru/elves-and-shoemaker.mp3'),
+    en: require('@/assets/audio/en/elves-and-shoemaker.mp3'),
   },
   'little-red-riding-hood': {
-    ru: require('@/assets/audio/ru/little-red-riding-hood.wav'),
-    en: require('@/assets/audio/en/little-red-riding-hood.wav'),
+    ru: require('@/assets/audio/ru/little-red-riding-hood.mp3'),
+    en: require('@/assets/audio/en/little-red-riding-hood.mp3'),
   },
   'three-little-pigs': {
-    ru: require('@/assets/audio/ru/three-little-pigs.wav'),
-    en: require('@/assets/audio/en/three-little-pigs.wav'),
+    ru: require('@/assets/audio/ru/three-little-pigs.mp3'),
+    en: require('@/assets/audio/en/three-little-pigs.mp3'),
   },
 };
 

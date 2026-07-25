@@ -12,8 +12,8 @@ const tempRoot = '/tmp/dreamy-tales-audio';
 mkdirSync(tempRoot, { recursive: true });
 
 const voices = {
-  ru: { name: 'Milena', rate: '76' },
-  en: { name: 'Daniel', rate: '78' },
+  ru: { name: 'Milena', rate: '115' },
+  en: { name: 'Samantha', rate: '125' },
 };
 
 for (const story of stories) {
@@ -23,7 +23,7 @@ for (const story of stories) {
 
     const textPath = join(tempRoot, `${story.slug}-${language}.txt`);
     const aiffPath = join(tempRoot, `${story.slug}-${language}.aiff`);
-    const outputPath = join(outputDirectory, `${story.slug}.wav`);
+    const outputPath = join(outputDirectory, `${story.slug}.mp3`);
     writeFileSync(textPath, story.text[language], 'utf8');
 
     const voice = voices[language];
@@ -38,14 +38,14 @@ for (const story of stories) {
       '-o',
       aiffPath,
     ]);
-    execFileSync('afconvert', [
+    execFileSync('lame', [
+      '--quiet',
+      '-b',
+      '64',
+      '-m',
+      'm',
       aiffPath,
-      '-o',
       outputPath,
-      '-f',
-      'WAVE',
-      '-d',
-      'LEI16@11025',
     ]);
     unlinkSync(textPath);
     unlinkSync(aiffPath);

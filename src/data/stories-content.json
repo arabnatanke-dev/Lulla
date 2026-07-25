@@ -14,7 +14,7 @@
     "categories": ["bedtime", "animals", "lessons"],
     "ageFrom": 2,
     "ageTo": 6,
-    "durationSeconds": { "ru": 141, "en": 135 },
+    "durationSeconds": { "ru": 122, "en": 101 },
     "isFeatured": true,
     "order": 1
   },
@@ -33,7 +33,7 @@
     "categories": ["animals", "lessons"],
     "ageFrom": 2,
     "ageTo": 6,
-    "durationSeconds": { "ru": 145, "en": 139 },
+    "durationSeconds": { "ru": 126, "en": 106 },
     "isFeatured": false,
     "order": 2
   },
@@ -52,7 +52,7 @@
     "categories": ["bedtime", "magic"],
     "ageFrom": 3,
     "ageTo": 7,
-    "durationSeconds": { "ru": 152, "en": 151 },
+    "durationSeconds": { "ru": 132, "en": 116 },
     "isFeatured": false,
     "order": 3
   },
@@ -71,7 +71,7 @@
     "categories": ["bedtime", "animals", "lessons"],
     "ageFrom": 4,
     "ageTo": 8,
-    "durationSeconds": { "ru": 150, "en": 145 },
+    "durationSeconds": { "ru": 130, "en": 110 },
     "isFeatured": true,
     "order": 4
   },
@@ -90,7 +90,7 @@
     "categories": ["lessons"],
     "ageFrom": 5,
     "ageTo": 8,
-    "durationSeconds": { "ru": 160, "en": 159 },
+    "durationSeconds": { "ru": 139, "en": 122 },
     "isFeatured": false,
     "order": 5
   },
@@ -109,7 +109,7 @@
     "categories": ["adventures", "animals"],
     "ageFrom": 4,
     "ageTo": 8,
-    "durationSeconds": { "ru": 152, "en": 148 },
+    "durationSeconds": { "ru": 132, "en": 112 },
     "isFeatured": true,
     "order": 6
   },
@@ -128,7 +128,7 @@
     "categories": ["bedtime", "magic", "lessons"],
     "ageFrom": 4,
     "ageTo": 8,
-    "durationSeconds": { "ru": 166, "en": 158 },
+    "durationSeconds": { "ru": 144, "en": 121 },
     "isFeatured": false,
     "order": 7
   },
@@ -147,7 +147,7 @@
     "categories": ["bedtime", "magic", "lessons"],
     "ageFrom": 3,
     "ageTo": 7,
-    "durationSeconds": { "ru": 159, "en": 158 },
+    "durationSeconds": { "ru": 138, "en": 120 },
     "isFeatured": true,
     "order": 8
   },
@@ -166,7 +166,7 @@
     "categories": ["adventures", "lessons"],
     "ageFrom": 4,
     "ageTo": 8,
-    "durationSeconds": { "ru": 160, "en": 164 },
+    "durationSeconds": { "ru": 139, "en": 126 },
     "isFeatured": false,
     "order": 9
   },
@@ -185,7 +185,7 @@
     "categories": ["adventures", "animals", "lessons"],
     "ageFrom": 3,
     "ageTo": 7,
-    "durationSeconds": { "ru": 165, "en": 164 },
+    "durationSeconds": { "ru": 143, "en": 124 },
     "isFeatured": true,
     "order": 10
   }
