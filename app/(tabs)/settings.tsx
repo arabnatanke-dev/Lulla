@@ -38,6 +38,17 @@ export default function SettingsScreen() {
     ]);
   };
 
+  /**
+   * Открывает почтовое приложение с адресом создателя и готовой темой письма.
+   */
+  const openFeedback = () => {
+    Linking.openURL(
+      `mailto:arabnatanke@gmail.com?subject=${encodeURIComponent(
+        language === 'ru' ? 'Отзыв о приложении Dreamy Tales' : 'Dreamy Tales feedback',
+      )}`,
+    );
+  };
+
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t('settings')}</Text>
@@ -75,17 +86,13 @@ export default function SettingsScreen() {
 
       <SettingsSection icon="information-circle" title={t('aboutApp')}>
         <Text style={styles.about}>{t('aboutText')}</Text>
+        <Text style={styles.creator}>{t('createdBy')}</Text>
+        <Text style={styles.contact}>{t('contactEmail')}</Text>
         <Text style={styles.version}>{t('version')}</Text>
       </SettingsSection>
 
       <Pressable
-        onPress={() =>
-          Linking.openURL(
-            `mailto:hello@dreamytales.app?subject=${encodeURIComponent(
-              language === 'ru' ? 'Отзыв о приложении Dreamy Tales' : 'Dreamy Tales feedback',
-            )}`,
-          )
-        }
+        onPress={openFeedback}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <View style={styles.rowIcon}>
           <Ionicons name="mail-outline" size={21} color={palette.purple} />
@@ -271,6 +278,16 @@ const styles = StyleSheet.create({
     color: palette.purple,
     fontSize: 13,
     fontWeight: '800',
+  },
+  creator: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  contact: {
+    color: palette.purple,
+    fontSize: 13,
+    fontWeight: '700',
   },
   legalLink: {
     minHeight: 46,

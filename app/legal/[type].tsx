@@ -13,13 +13,13 @@ const legalText = {
       'Dreamy Tales не запрашивает имя, дату рождения, фотографию, адрес, контакты, геолокацию, доступ к камере или микрофону.',
       'Выбранный язык, избранные сказки, размер текста, скорость и позиции прослушивания сохраняются только в локальной памяти устройства.',
       'В текущей версии нет регистрации, рекламы, аналитики и передачи пользовательских данных на сервер.',
-      'Для вопросов о конфиденциальности напишите на hello@dreamytales.app.',
+      'Для вопросов о конфиденциальности напишите создателю приложения Abdulla Chukhray на arabnatanke@gmail.com.',
     ],
     en: [
       'Dreamy Tales does not request a name, date of birth, photo, address, contacts, precise location, camera access, or microphone access.',
       'The selected language, favorites, text size, playback speed, and listening positions are stored only in local device storage.',
       'This version has no registration, advertising, analytics, or transfer of user data to a server.',
-      'For privacy questions, contact hello@dreamytales.app.',
+      'For privacy questions, contact the app creator Abdulla Chukhray at arabnatanke@gmail.com.',
     ],
   },
   terms: {
@@ -55,7 +55,7 @@ export default function LegalScreen() {
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.paper}>
-        <Text style={styles.updated}>Dreamy Tales · 24.07.2026</Text>
+        <Text style={styles.updated}>Dreamy Tales · Abdulla Chukhray · 25.07.2026</Text>
         {legalText[safeType][language].map((paragraph, index) => (
           <Text key={index} style={styles.paragraph}>
             {paragraph}
