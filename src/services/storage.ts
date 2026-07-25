@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { StoredSettings } from '@/src/types';
 
-const STORAGE_KEY = '@dreamy-tales/settings-v1';
+const STORAGE_KEY = '@lulla/settings-v1';
 
 /**
  * Читает сохранённые настройки из памяти устройства.

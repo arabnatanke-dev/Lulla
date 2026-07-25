@@ -153,7 +153,7 @@ export function AudioProvider({ children }: PropsWithChildren) {
       player.playbackRate = playbackRate;
       player.setActiveForLockScreen(true, {
         title: story.title[language],
-        artist: 'Dreamy Tales',
+        artist: 'Lulla',
         albumTitle: language === 'ru' ? 'Сказки перед сном' : 'Bedtime stories',
       }, {
         showSeekBackward: true,
@@ -270,7 +270,7 @@ export function AudioProvider({ children }: PropsWithChildren) {
     player.replace(activeStory.audio[language]);
     player.updateLockScreenMetadata({
       title: activeStory.title[language],
-      artist: 'Dreamy Tales',
+      artist: 'Lulla',
       albumTitle: language === 'ru' ? 'Сказки перед сном' : 'Bedtime stories',
     });
     player.seekTo(currentTime).then(() => {

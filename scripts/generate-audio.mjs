@@ -7,7 +7,7 @@ const stories = JSON.parse(
   readFileSync(new URL('../src/data/stories-content.json', import.meta.url), 'utf8'),
 );
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
-const tempRoot = '/tmp/dreamy-tales-audio';
+const tempRoot = '/tmp/lulla-audio';
 
 mkdirSync(tempRoot, { recursive: true });
 

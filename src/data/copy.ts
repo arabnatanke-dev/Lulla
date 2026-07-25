@@ -2,7 +2,7 @@ import type { AppCopy, CategoryId, Language } from '@/src/types';
 
 export const copy: Record<Language, AppCopy> = {
   ru: {
-    appName: 'Dreamy Tales',
+    appName: 'Lulla',
     home: 'Главная',
     catalog: 'Каталог',
     favorites: 'Избранное',
@@ -25,6 +25,10 @@ export const copy: Record<Language, AppCopy> = {
     read: 'Читать',
     aboutStory: 'О сказке',
     language: 'Язык',
+    theme: 'Оформление',
+    themeSystem: 'Как на устройстве',
+    themeLight: 'Светлая',
+    themeDark: 'Тёмная',
     playback: 'Воспроизведение',
     textSize: 'Размер текста',
     small: 'Маленький',
@@ -84,7 +88,7 @@ export const copy: Record<Language, AppCopy> = {
     allStories: 'Все сказки',
   },
   en: {
-    appName: 'Dreamy Tales',
+    appName: 'Lulla',
     home: 'Home',
     catalog: 'Catalog',
     favorites: 'Favorites',
@@ -107,6 +111,10 @@ export const copy: Record<Language, AppCopy> = {
     read: 'Read',
     aboutStory: 'About this story',
     language: 'Language',
+    theme: 'Appearance',
+    themeSystem: 'Use device setting',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     playback: 'Playback',
     textSize: 'Text size',
     small: 'Small',
