@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Constants from 'expo-constants';
 import { Href, router } from 'expo-router';
 import React from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -45,12 +46,18 @@ export default function SettingsScreen() {
   /**
    * Открывает почтовое приложение с адресом создателя и готовой темой письма.
    */
-  const openFeedback = () => {
-    Linking.openURL(
-      `mailto:arabnatanke@gmail.com?subject=${encodeURIComponent(
+  const openFeedback = async () => {
+    const url = `mailto:arabnatanke@gmail.com?subject=${encodeURIComponent(
         language === 'ru' ? 'Отзыв о приложении Lulla' : 'Lulla feedback',
-      )}`,
-    );
+      )}`;
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) throw new Error('Email links are not supported');
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(t('emailUnavailable'), 'arabnatanke@gmail.com');
+    }
   };
 
   return (
@@ -92,7 +99,11 @@ export default function SettingsScreen() {
         />
       </SettingsSection>
 
-      <Pressable onPress={confirmReset} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('clearProgress')}
+        onPress={confirmReset}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <View style={[styles.rowIcon, styles.warningIcon]}>
           <Ionicons name="refresh" size={21} color={palette.coral} />
         </View>
@@ -104,10 +115,14 @@ export default function SettingsScreen() {
         <Text style={styles.about}>{t('aboutText')}</Text>
         <Text style={styles.creator}>{t('createdBy')}</Text>
         <Text style={styles.contact}>{t('contactEmail')}</Text>
-        <Text style={styles.version}>{t('version')}</Text>
+        <Text style={styles.version}>
+          {language === 'ru' ? 'Версия' : 'Version'} {Constants.expoConfig?.version ?? '1.0.2'}
+        </Text>
       </SettingsSection>
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('feedback')}
         onPress={openFeedback}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         <View style={styles.rowIcon}>
@@ -120,6 +135,8 @@ export default function SettingsScreen() {
       <SettingsSection icon="shield-checkmark" title={t('privacy')}>
         <Text style={styles.about}>{t('privacyText')}</Text>
         <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t('privacyPolicy')}
           onPress={() =>
             router.push(
               { pathname: '/legal/[type]', params: { type: 'privacy' } } as unknown as Href,
@@ -130,6 +147,8 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={palette.muted} />
         </Pressable>
         <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t('terms')}
           onPress={() =>
             router.push(
               { pathname: '/legal/[type]', params: { type: 'terms' } } as unknown as Href,
@@ -185,12 +204,15 @@ function Segmented({
   const styles = createStyles(palette);
 
   return (
-    <View style={styles.segmented}>
+    <View accessibilityRole="radiogroup" style={styles.segmented}>
       {options.map((option) => {
         const active = option.value === value;
         return (
           <Pressable
             key={option.value}
+            accessibilityRole="radio"
+            accessibilityLabel={option.label}
+            accessibilityState={{ checked: active, selected: active }}
             onPress={() => onChange(option.value)}
             style={[styles.segment, active && styles.activeSegment]}>
             <Text style={[styles.segmentText, active && styles.activeSegmentText]}>
@@ -276,7 +298,7 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   },
   segment: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 11,

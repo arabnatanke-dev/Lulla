@@ -62,11 +62,16 @@ export default function CatalogScreen() {
           onChangeText={setQuery}
           placeholder={t('search')}
           placeholderTextColor={palette.muted}
+          accessibilityLabel={t('search')}
           returnKeyType="search"
           style={styles.input}
         />
         {query ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('resetSearch')}
+            onPress={() => setQuery('')}
+            hitSlop={12}>
             <Ionicons name="close-circle" size={20} color={palette.muted} />
           </Pressable>
         ) : null}
@@ -83,6 +88,9 @@ export default function CatalogScreen() {
           const selected = item === category;
           return (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={categoryLabels[item][language]}
+              accessibilityState={{ selected }}
               onPress={() => setCategory(item)}
               style={[styles.filter, selected && styles.selectedFilter]}>
               <Text style={[styles.filterText, selected && styles.selectedFilterText]}>
@@ -174,7 +182,7 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   },
   filter: {
     paddingHorizontal: 15,
-    height: 39,
+    minHeight: 44,
     borderRadius: radii.pill,
     backgroundColor: palette.surface,
     borderWidth: 1,

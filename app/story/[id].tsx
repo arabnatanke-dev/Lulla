@@ -1,14 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RoundButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
 import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
-import { useAudio } from '@/src/context/audio-context';
+import { useAudioActions } from '@/src/context/audio-context';
 import { categoryLabels } from '@/src/data/copy';
 import { getStory } from '@/src/data/stories';
 
@@ -19,9 +20,10 @@ import { getStory } from '@/src/data/stories';
 export default function StoryDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language, t, isFavorite, toggleFavorite, progress, colors: palette } = useApp();
-  const { startStory, addToQueue, removeFromQueue, isQueued } = useAudio();
+  const { startStory, addToQueue, removeFromQueue, isQueued } = useAudioActions();
   const styles = createStyles(palette);
   const story = getStory(id);
+  const [starting, setStarting] = useState(false);
 
   if (!story) {
     return (
@@ -36,8 +38,11 @@ export default function StoryDetailsScreen() {
    * Передаёт сказку общему аудиоплееру и открывает экран воспроизведения.
    */
   const play = async () => {
-    await startStory(story);
-    router.push('/player');
+    if (starting) return;
+    setStarting(true);
+    const started = await startStory(story);
+    setStarting(false);
+    if (started) router.navigate('/player');
   };
 
   /**
@@ -46,6 +51,15 @@ export default function StoryDetailsScreen() {
   const toggleQueue = () => {
     if (isQueued(story.id)) removeFromQueue(story.id);
     else addToQueue(story);
+    Haptics.selectionAsync().catch(() => undefined);
+  };
+
+  /**
+   * Меняет избранное и подтверждает действие коротким тактильным откликом.
+   */
+  const toggleStoryFavorite = () => {
+    toggleFavorite(story.id);
+    Haptics.selectionAsync().catch(() => undefined);
   };
 
   return (
@@ -61,8 +75,11 @@ export default function StoryDetailsScreen() {
         <RoundButton
           icon={isFavorite(story.id) ? 'heart' : 'heart-outline'}
           color={isFavorite(story.id) ? palette.coral : palette.text}
-          accessibilityLabel={t('favorites')}
-          onPress={() => toggleFavorite(story.id)}
+          accessibilityLabel={
+            isFavorite(story.id) ? t('removeFavorite') : t('addFavorite')
+          }
+          accessibilityState={{ selected: isFavorite(story.id) }}
+          onPress={toggleStoryFavorite}
           style={styles.favorite}
         />
         {story.isFeatured ? (
@@ -98,6 +115,7 @@ export default function StoryDetailsScreen() {
           label={progress[story.id] ? t('continueListening') : t('startListening')}
           icon="play"
           onPress={play}
+          loading={starting}
         />
         <PrimaryButton
           label={isQueued(story.id) ? t('removeFromQueue') : t('addToQueue')}

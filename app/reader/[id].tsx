@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { RoundButton } from '@/src/components/buttons';
+import { PrimaryButton, RoundButton } from '@/src/components/buttons';
 import { Screen } from '@/src/components/screen';
 import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
@@ -23,17 +23,39 @@ const sizes = {
 export default function ReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language, t, textSize, setTextSize, colors: palette } = useApp();
-  const { activeStory, playing, startStory, toggle, currentTime, duration } = useAudio();
+  const {
+    activeStory,
+    playing,
+    loadingStoryId,
+    startStory,
+    toggle,
+    currentTime,
+    duration,
+  } = useAudio();
   const styles = createStyles(palette);
   const story = getStory(id);
 
-  if (!story) return null;
+  if (!story) {
+    return (
+      <Screen contentContainerStyle={styles.notFound}>
+        <Ionicons name="book-outline" size={52} color={palette.purple} />
+        <Text style={styles.notFoundTitle}>{t('storyNotFound')}</Text>
+        <PrimaryButton
+          label={t('goCatalog')}
+          icon="library-outline"
+          onPress={() => router.replace('/catalog')}
+        />
+      </Screen>
+    );
+  }
 
   const isCurrent = activeStory?.id === story.id;
+  const isLoading = loadingStoryId === story.id;
   /**
    * Ставит текущую сказку на паузу или загружает её, если играет другая история.
    */
   const onPlay = async () => {
+    if (isLoading) return;
     if (isCurrent) toggle();
     else await startStory(story);
   };
@@ -55,25 +77,47 @@ export default function ReaderScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={playing ? 'Pause' : 'Play'}
+          accessibilityLabel={isCurrent && playing ? t('pause') : t('play')}
+          accessibilityState={{ busy: isLoading }}
+          disabled={isLoading}
           onPress={onPlay}
           style={styles.play}>
-          <Ionicons
-            name={isCurrent && playing ? 'pause' : 'play'}
-            size={25}
-            color={palette.white}
-          />
+          {isLoading ? (
+            <ActivityIndicator color={palette.white} />
+          ) : (
+            <Ionicons
+              name={isCurrent && playing ? 'pause' : 'play'}
+              size={25}
+              color={palette.white}
+            />
+          )}
         </Pressable>
       </View>
 
-      <View style={styles.progressTrack}>
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={t('player')}
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(progress * 100),
+          text: `${Math.round(progress * 100)}%`,
+        }}
+        style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
       </View>
 
-      <View style={styles.sizeControl}>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t('textSize')}
+        style={styles.sizeControl}>
         {(['small', 'medium', 'large'] as const).map((size, index) => (
           <Pressable
             key={size}
+            accessibilityRole="radio"
+            accessibilityLabel={t(size)}
+            accessibilityState={{ checked: textSize === size, selected: textSize === size }}
             onPress={() => setTextSize(size)}
             style={[styles.sizeButton, textSize === size && styles.activeSize]}>
             <Text
@@ -167,7 +211,7 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   },
   sizeButton: {
     width: 52,
-    height: 38,
+    minHeight: 44,
     borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -205,5 +249,18 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     width: 54,
     height: 1,
     backgroundColor: palette.line,
+  },
+  notFound: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    paddingHorizontal: 28,
+  },
+  notFoundTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });

@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
+  type AccessibilityActionEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -22,11 +23,13 @@ import { useApp } from '@/src/context/app-context';
  * Показывает три приветственных слайда при самом первом запуске приложения.
  */
 export default function OnboardingScreen() {
-  const { width } = useWindowDimensions();
-  const { completeOnboarding, t, colors: palette } = useApp();
+  const { width, height } = useWindowDimensions();
+  const { language, setLanguage, completeOnboarding, t, colors: palette } = useApp();
   const styles = createStyles(palette);
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
+  const artHeight = Math.min(420, Math.max(240, height * 0.47));
+  const iconCircleSize = Math.min(180, Math.max(138, width * 0.42));
 
   const slides = [
     {
@@ -76,35 +79,108 @@ export default function OnboardingScreen() {
     setPage(Math.round(event.nativeEvent.contentOffset.x / width));
   };
 
+  /**
+   * Перелистывает слайды командами экранного диктора «вперёд» и «назад».
+   */
+  const changePageAccessible = (event: AccessibilityActionEvent) => {
+    const offset = event.nativeEvent.actionName === 'increment' ? 1 : -1;
+    const targetPage = Math.min(slides.length - 1, Math.max(0, page + offset));
+    scrollRef.current?.scrollTo({ x: width * targetPage, animated: true });
+    setPage(targetPage);
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
-      <Pressable onPress={finish} style={styles.skip}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('skip')}
+        onPress={finish}
+        style={styles.skip}>
         <Text style={styles.skipText}>{t('skip')}</Text>
       </Pressable>
 
       <ScrollView
         ref={scrollRef}
+        accessibilityRole="adjustable"
+        accessibilityLabel={t('appName')}
+        accessibilityActions={[
+          { name: 'increment', label: t('next') },
+          { name: 'decrement', label: t('back') },
+        ]}
+        accessibilityValue={{
+          min: 1,
+          max: slides.length,
+          now: page + 1,
+          text: `${page + 1} / ${slides.length}`,
+        }}
+        onAccessibilityAction={changePageAccessible}
         horizontal
         pagingEnabled
         bounces={false}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScrollEnd}>
-        {slides.map((slide) => (
+        {slides.map((slide, index) => (
           <View key={slide.title} style={[styles.slide, { width }]}>
-            <LinearGradient colors={[...slide.colors]} style={styles.art}>
-              <View style={styles.stars}>
-                <Ionicons name="sparkles" size={24} color={palette.yellow} />
-                <Ionicons name="star" size={12} color={palette.white} />
-                <Ionicons name="sparkles" size={17} color={palette.lavender} />
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.slideContent}>
+              <LinearGradient
+                colors={[...slide.colors]}
+                style={[styles.art, { height: artHeight }]}>
+                <View style={styles.stars}>
+                  <Ionicons name="sparkles" size={24} color={palette.yellow} />
+                  <Ionicons name="star" size={12} color={palette.white} />
+                  <Ionicons name="sparkles" size={17} color={palette.lavender} />
+                </View>
+                <View
+                  style={[
+                    styles.iconCircle,
+                    {
+                      width: iconCircleSize,
+                      height: iconCircleSize,
+                      borderRadius: iconCircleSize / 2,
+                    },
+                  ]}>
+                  <Ionicons
+                    name={slide.icon}
+                    size={Math.round(iconCircleSize * 0.46)}
+                    color={palette.yellow}
+                  />
+                </View>
+              </LinearGradient>
+              <View style={styles.copy}>
+                <Text style={styles.title}>{slide.title}</Text>
+                <Text style={styles.text}>{slide.text}</Text>
+                {index === 2 ? (
+                  <View
+                    accessibilityRole="radiogroup"
+                    accessibilityLabel={t('language')}
+                    style={styles.languages}>
+                    {(['ru', 'en'] as const).map((option) => {
+                      const selected = language === option;
+                      return (
+                        <Pressable
+                          key={option}
+                          accessibilityRole="radio"
+                          accessibilityLabel={option === 'ru' ? 'Русский' : 'English'}
+                          accessibilityState={{ checked: selected, selected }}
+                          onPress={() => setLanguage(option)}
+                          style={[styles.language, selected && styles.selectedLanguage]}>
+                          <Text
+                            style={[
+                              styles.languageText,
+                              selected && styles.selectedLanguageText,
+                            ]}>
+                            {option === 'ru' ? 'Русский' : 'English'}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
               </View>
-              <View style={styles.iconCircle}>
-                <Ionicons name={slide.icon} size={86} color={palette.yellow} />
-              </View>
-            </LinearGradient>
-            <View style={styles.copy}>
-              <Text style={styles.title}>{slide.title}</Text>
-              <Text style={styles.text}>{slide.text}</Text>
-            </View>
+            </ScrollView>
           </View>
         ))}
       </ScrollView>
@@ -141,6 +217,8 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     zIndex: 5,
     paddingHorizontal: 14,
     paddingVertical: 9,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   skipText: {
     color: palette.white,
@@ -150,8 +228,11 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   slide: {
     flex: 1,
   },
+  slideContent: {
+    flexGrow: 1,
+    paddingBottom: 12,
+  },
   art: {
-    height: '58%',
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomLeftRadius: 42,
@@ -165,9 +246,6 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconCircle: {
-    width: 190,
-    height: 190,
-    borderRadius: 95,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -192,6 +270,33 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     fontSize: 17,
     lineHeight: 25,
     textAlign: 'center',
+  },
+  languages: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    padding: 4,
+    borderRadius: 16,
+    backgroundColor: palette.paper,
+  },
+  language: {
+    minWidth: 110,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 13,
+  },
+  selectedLanguage: {
+    backgroundColor: palette.navy,
+  },
+  languageText: {
+    color: palette.muted,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  selectedLanguageText: {
+    color: palette.white,
   },
   footer: {
     paddingHorizontal: 24,

@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/src/components/buttons';
@@ -10,7 +10,7 @@ import { Screen } from '@/src/components/screen';
 import { StoryCard } from '@/src/components/story-card';
 import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
-import { useAudio } from '@/src/context/audio-context';
+import { useAudioActions } from '@/src/context/audio-context';
 import { stories } from '@/src/data/stories';
 
 /**
@@ -18,17 +18,26 @@ import { stories } from '@/src/data/stories';
  */
 export default function HomeScreen() {
   const { language, t, colors: palette } = useApp();
-  const { startStory } = useAudio();
+  const { startStory } = useAudioActions();
   const styles = createStyles(palette);
+  const [startingFeatured, setStartingFeatured] = useState(false);
   const featured = stories.find((story) => story.isFeatured) ?? stories[0];
+
+  if (!featured) {
+    return <HomeEmptyState />;
+  }
+
   const shortStories = stories.filter((story) => story.durationSeconds[language] <= 235);
 
   /**
    * Запускает рекомендуемую сказку и открывает полный экран плеера.
    */
   const playFeatured = async () => {
-    await startStory(featured);
-    router.push('/player');
+    if (startingFeatured) return;
+    setStartingFeatured(true);
+    const started = await startStory(featured);
+    setStartingFeatured(false);
+    if (started) router.navigate('/player');
   };
 
   return (
@@ -66,6 +75,7 @@ export default function HomeScreen() {
             icon="play"
             variant="secondary"
             onPress={playFeatured}
+            loading={startingFeatured}
             style={styles.heroButton}
           />
         </View>
@@ -95,6 +105,26 @@ export default function HomeScreen() {
         icon="grid-outline"
         onPress={() => router.push('/catalog')}
       />
+    </Screen>
+  );
+}
+
+/**
+ * Показывает понятное состояние ошибки, если сборка не содержит ни одной сказки.
+ */
+function HomeEmptyState() {
+  const { t, colors: palette } = useApp();
+  const styles = createStyles(palette);
+
+  return (
+    <Screen contentContainerStyle={styles.emptyContent}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="book-outline" size={34} color={palette.purple} />
+      </View>
+      <Text accessibilityRole="header" style={styles.emptyTitle}>
+        {t('libraryEmpty')}
+      </Text>
+      <Text style={styles.emptyText}>{t('libraryEmptyText')}</Text>
     </Screen>
   );
 }
@@ -220,5 +250,35 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   },
   stack: {
     gap: 13,
+  },
+  emptyContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.iconBubble,
+    marginBottom: 18,
+  },
+  emptyTitle: {
+    color: palette.text,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: palette.muted,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginTop: 8,
+    maxWidth: 330,
   },
 });

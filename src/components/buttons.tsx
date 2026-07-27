@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   PressableProps,
   StyleProp,
@@ -16,6 +17,7 @@ interface PrimaryButtonProps extends PressableProps {
   label: string;
   icon?: keyof typeof Ionicons.glyphMap;
   variant?: 'primary' | 'secondary' | 'ghost';
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -27,30 +29,37 @@ export function PrimaryButton({
   label,
   icon,
   variant = 'primary',
+  loading = false,
   style,
   disabled,
+  accessibilityState,
   ...props
 }: PrimaryButtonProps) {
   const { colors: palette } = useApp();
   const styles = createStyles(palette);
+  const isDisabled = Boolean(disabled || loading);
+  const contentColor = variant === 'primary' ? palette.white : palette.text;
 
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
+      accessibilityState={{ ...accessibilityState, busy: loading, disabled: isDisabled }}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
         styles[variant],
         pressed && styles.pressed,
-        disabled && styles.disabled,
+        isDisabled && styles.disabled,
         style,
       ]}
       {...props}>
-      {icon ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={contentColor} />
+      ) : icon ? (
         <Ionicons
           name={icon}
           size={19}
-          color={variant === 'primary' ? palette.white : palette.text}
+          color={contentColor}
         />
       ) : null}
       <Text style={[styles.label, variant !== 'primary' && styles.darkLabel]}>{label}</Text>

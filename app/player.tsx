@@ -4,10 +4,19 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RoundButton } from '@/src/components/buttons';
+import { PrimaryButton, RoundButton } from '@/src/components/buttons';
 import { radii, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
 import { useAudio } from '@/src/context/audio-context';
@@ -31,6 +40,8 @@ export default function PlayerScreen() {
   const {
     activeStory,
     playing,
+    loadingStoryId,
+    isBuffering,
     currentTime,
     duration,
     toggle,
@@ -50,19 +61,25 @@ export default function PlayerScreen() {
   } = useAudio();
   const [timerVisible, setTimerVisible] = useState(false);
   const [queueVisible, setQueueVisible] = useState(false);
+  const [repeatVisible, setRepeatVisible] = useState(false);
   const styles = createStyles(palette);
 
   if (!activeStory) {
     return (
       <LinearGradient colors={[palette.navy, '#493F78']} style={styles.empty}>
+        <Ionicons name="musical-notes-outline" size={54} color={palette.yellow} />
         <Text style={styles.emptyText}>{t('audioUnavailable')}</Text>
-        <Pressable onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.emptyLink}>{t('goCatalog')}</Text>
-        </Pressable>
+        <PrimaryButton
+          label={t('goCatalog')}
+          icon="library-outline"
+          variant="secondary"
+          onPress={() => router.replace('/catalog')}
+        />
       </LinearGradient>
     );
   }
 
+  const isBusy = loadingStoryId === activeStory.id || isBuffering;
   const timerLabel =
     timerRemaining !== null
       ? formatTime(timerRemaining)
@@ -74,18 +91,6 @@ export default function PlayerScreen() {
     one: t('repeatOne'),
     all: t('repeatAll'),
   }[repeatMode];
-
-  /**
-   * По кругу переключает три режима повтора: выключен, одна сказка и вся очередь.
-   */
-  const cycleRepeatMode = () => {
-    const nextMode: Record<RepeatMode, RepeatMode> = {
-      off: 'one',
-      one: 'all',
-      all: 'off',
-    };
-    setRepeatMode(nextMode[repeatMode]);
-  };
 
   /**
    * Запускает выбранную сказку из очереди и закрывает окно очереди.
@@ -119,12 +124,23 @@ export default function PlayerScreen() {
               icon={isFavorite(activeStory.id) ? 'heart' : 'heart-outline'}
               color={isFavorite(activeStory.id) ? palette.peach : palette.white}
               backgroundColor="rgba(255,255,255,0.12)"
-              accessibilityLabel={t('favorites')}
+              accessibilityLabel={
+                isFavorite(activeStory.id) ? t('removeFavorite') : t('addFavorite')
+              }
+              accessibilityState={{ selected: isFavorite(activeStory.id) }}
               onPress={() => toggleFavorite(activeStory.id)}
             />
           </View>
 
-          <Image source={activeStory.coverImage} style={styles.cover} contentFit="cover" />
+          <View style={styles.coverWrap}>
+            <Image source={activeStory.coverImage} style={styles.cover} contentFit="cover" />
+            {isBusy ? (
+              <View style={styles.loadingCover}>
+                <ActivityIndicator size="large" color={palette.yellow} />
+                <Text style={styles.loadingText}>{t('loading')}</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.title}>{activeStory.title[language]}</Text>
 
           <View style={styles.timeline}>
@@ -133,6 +149,15 @@ export default function PlayerScreen() {
               minimumValue={0}
               maximumValue={Math.max(duration, 1)}
               value={Math.min(currentTime, duration || currentTime)}
+              disabled={isBusy}
+              accessibilityLabel={t('player')}
+              accessibilityRole="adjustable"
+              accessibilityValue={{
+                min: 0,
+                max: Math.max(1, Math.round(duration)),
+                now: Math.min(Math.max(0, Math.round(currentTime)), Math.max(1, Math.round(duration))),
+                text: `${formatTime(currentTime)} / ${formatTime(duration)}`,
+              }}
               onSlidingComplete={seekTo}
               minimumTrackTintColor={palette.yellow}
               maximumTrackTintColor="rgba(255,255,255,0.22)"
@@ -145,14 +170,36 @@ export default function PlayerScreen() {
           </View>
 
           <View style={styles.controls}>
-            <Pressable onPress={() => skipBy(-10)} style={styles.skipButton}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t('back')} 10 ${t('seconds')}`}
+              accessibilityState={{ disabled: isBusy }}
+              disabled={isBusy}
+              onPress={() => skipBy(-10)}
+              style={[styles.skipButton, isBusy && styles.disabled]}>
               <Ionicons name="play-back" size={25} color={palette.white} />
               <Text style={styles.skipText}>10</Text>
             </Pressable>
-            <Pressable onPress={toggle} style={styles.playButton}>
-              <Ionicons name={playing ? 'pause' : 'play'} size={40} color={palette.navy} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={playing ? t('pause') : t('play')}
+              accessibilityState={{ busy: isBusy, disabled: isBusy }}
+              disabled={isBusy}
+              onPress={toggle}
+              style={[styles.playButton, isBusy && styles.disabled]}>
+              {isBusy ? (
+                <ActivityIndicator size="large" color={palette.navy} />
+              ) : (
+                <Ionicons name={playing ? 'pause' : 'play'} size={40} color={palette.navy} />
+              )}
             </Pressable>
-            <Pressable onPress={() => skipBy(10)} style={styles.skipButton}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t('forward')} 10 ${t('seconds')}`}
+              accessibilityState={{ disabled: isBusy }}
+              disabled={isBusy}
+              onPress={() => skipBy(10)}
+              style={[styles.skipButton, isBusy && styles.disabled]}>
               <Ionicons name="play-forward" size={25} color={palette.white} />
               <Text style={styles.skipText}>10</Text>
             </Pressable>
@@ -162,8 +209,16 @@ export default function PlayerScreen() {
             {rates.map((rate) => (
               <Pressable
                 key={rate}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('speed')} ${rate}`}
+                accessibilityState={{ selected: playbackRate === rate, disabled: isBusy }}
+                disabled={isBusy}
                 onPress={() => setRate(rate)}
-                style={[styles.rate, playbackRate === rate && styles.activeRate]}>
+                style={[
+                  styles.rate,
+                  playbackRate === rate && styles.activeRate,
+                  isBusy && styles.disabled,
+                ]}>
                 <Text style={[styles.rateText, playbackRate === rate && styles.activeRateText]}>
                   {rate}×
                 </Text>
@@ -173,6 +228,8 @@ export default function PlayerScreen() {
 
           <View style={styles.actions}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t('sleepTimer')}: ${timerLabel}`}
               onPress={() => setTimerVisible(true)}
               style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
               <Ionicons name="timer-outline" size={22} color={palette.yellow} />
@@ -182,7 +239,10 @@ export default function PlayerScreen() {
               </View>
             </Pressable>
             <Pressable
-              onPress={cycleRepeatMode}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('repeat')}: ${repeatLabel}`}
+              accessibilityState={{ selected: repeatMode !== 'off' }}
+              onPress={() => setRepeatVisible(true)}
               style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
               <View>
                 <Ionicons
@@ -198,6 +258,8 @@ export default function PlayerScreen() {
               </View>
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${t('queue')}: ${queue.length}`}
               onPress={() => setQueueVisible(true)}
               style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
               <View>
@@ -216,6 +278,8 @@ export default function PlayerScreen() {
               </View>
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('read')}
               onPress={() =>
                 router.push({ pathname: '/reader/[id]', params: { id: activeStory.id } })
               }
@@ -224,6 +288,8 @@ export default function PlayerScreen() {
               <Text style={styles.actionTitle}>{t('read')}</Text>
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('closePlayer')}
               onPress={() => {
                 close();
                 router.replace('/(tabs)');
@@ -252,6 +318,15 @@ export default function PlayerScreen() {
           onRemove={removeFromQueue}
           onClear={clearQueue}
         />
+        <RepeatModal
+          visible={repeatVisible}
+          value={repeatMode}
+          onClose={() => setRepeatVisible(false)}
+          onSelect={(mode) => {
+            setRepeatMode(mode);
+            setRepeatVisible(false);
+          }}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -276,13 +351,21 @@ function QueueModal({
   onRemove: (storyId: string) => void;
   onClear: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const { language, t, colors: palette } = useApp();
   const styles = createStyles(palette);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.modal, styles.queueModal]} onPress={() => undefined}>
+        <Pressable
+          accessibilityViewIsModal
+          style={[
+            styles.modal,
+            styles.queueModal,
+            { paddingBottom: Math.max(24, insets.bottom + 12) },
+          ]}
+          onPress={() => undefined}>
           <View style={styles.modalHeader}>
             <View>
               <Text style={styles.modalTitle}>{t('queue')}</Text>
@@ -290,14 +373,22 @@ function QueueModal({
                 {t('queueCount')}: {queue.length}
               </Text>
             </View>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('dismiss')}
+              onPress={onClose}
+              hitSlop={8}
+              style={styles.modalClose}>
               <Ionicons name="close" size={24} color={palette.text} />
             </Pressable>
           </View>
 
           {queue.length ? (
             <>
-              <ScrollView style={styles.queueList} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                style={styles.queueList}
+                contentContainerStyle={styles.queueListContent}
+                showsVerticalScrollIndicator={false}>
                 {queue.map((story, index) => (
                   <Pressable
                     key={story.id}
@@ -334,7 +425,19 @@ function QueueModal({
                   </Pressable>
                 ))}
               </ScrollView>
-              <Pressable onPress={onClear} style={styles.clearQueueButton}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  Alert.alert(t('clearQueueConfirm'), t('clearQueueConfirmText'), [
+                    { text: t('cancel'), style: 'cancel' },
+                    {
+                      text: t('clearQueue'),
+                      style: 'destructive',
+                      onPress: onClear,
+                    },
+                  ]);
+                }}
+                style={styles.clearQueueButton}>
                 <Ionicons name="trash-outline" size={18} color={palette.coral} />
                 <Text style={styles.clearQueueText}>{t('clearQueue')}</Text>
               </Pressable>
@@ -344,6 +447,15 @@ function QueueModal({
               <Ionicons name="book-outline" size={42} color={palette.purple} />
               <Text style={styles.queueEmptyTitle}>{t('queueEmpty')}</Text>
               <Text style={styles.queueEmptyText}>{t('queueEmptyText')}</Text>
+              <PrimaryButton
+                label={t('chooseStories')}
+                icon="library-outline"
+                variant="secondary"
+                onPress={() => {
+                  onClose();
+                  router.navigate('/catalog');
+                }}
+              />
             </View>
           )}
         </Pressable>
@@ -367,6 +479,7 @@ function TimerModal({
   value: 5 | 10 | 15 | 30 | 'end' | null;
   onSelect: (value: 5 | 10 | 15 | 30 | 'end' | null) => void;
 }) {
+  const insets = useSafeAreaInsets();
   const { t, colors: palette } = useApp();
   const styles = createStyles(palette);
   const choices = [
@@ -379,26 +492,117 @@ function TimerModal({
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.modal} onPress={() => undefined}>
+        <Pressable
+          accessibilityViewIsModal
+          style={[
+            styles.modal,
+            styles.choiceModal,
+            { paddingBottom: Math.max(24, insets.bottom + 12) },
+          ]}
+          onPress={() => undefined}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('sleepTimer')}</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('dismiss')}
+              onPress={onClose}
+              hitSlop={8}
+              style={styles.modalClose}>
               <Ionicons name="close" size={24} color={palette.text} />
             </Pressable>
           </View>
-          {choices.map((choice) => (
+          <ScrollView
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('sleepTimer')}
+            style={styles.choiceList}
+            contentContainerStyle={styles.choiceListContent}
+            showsVerticalScrollIndicator={false}>
+            {choices.map((choice) => (
+              <Pressable
+                key={String(choice.value)}
+                accessibilityRole="radio"
+                accessibilityLabel={choice.label}
+                accessibilityState={{
+                  checked: value === choice.value,
+                  selected: value === choice.value,
+                }}
+                onPress={() => onSelect(choice.value)}
+                style={styles.timerChoice}>
+                <Text style={styles.timerChoiceText}>{choice.label}</Text>
+                {value === choice.value ? (
+                  <Ionicons name="checkmark-circle" size={23} color={palette.purple} />
+                ) : null}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/**
+ * Показывает три режима повтора отдельным понятным выбором вместо скрытого цикла.
+ */
+function RepeatModal({
+  visible,
+  value,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  value: RepeatMode;
+  onClose: () => void;
+  onSelect: (value: RepeatMode) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const { t, colors: palette } = useApp();
+  const styles = createStyles(palette);
+  const choices: { value: RepeatMode; label: string }[] = [
+    { value: 'off', label: t('repeatOff') },
+    { value: 'one', label: t('repeatOne') },
+    { value: 'all', label: t('repeatAll') },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable
+          accessibilityViewIsModal
+          style={[styles.modal, { paddingBottom: Math.max(24, insets.bottom + 12) }]}
+          onPress={() => undefined}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('repeat')}</Text>
             <Pressable
-              key={String(choice.value)}
-              onPress={() => onSelect(choice.value)}
-              style={styles.timerChoice}>
-              <Text style={styles.timerChoiceText}>{choice.label}</Text>
-              {value === choice.value ? (
-                <Ionicons name="checkmark-circle" size={23} color={palette.purple} />
-              ) : null}
+              accessibilityRole="button"
+              accessibilityLabel={t('dismiss')}
+              onPress={onClose}
+              hitSlop={8}
+              style={styles.modalClose}>
+              <Ionicons name="close" size={24} color={palette.text} />
             </Pressable>
-          ))}
+          </View>
+          <View accessibilityRole="radiogroup" accessibilityLabel={t('repeat')}>
+            {choices.map((choice) => (
+              <Pressable
+                key={choice.value}
+                accessibilityRole="radio"
+                accessibilityLabel={choice.label}
+                accessibilityState={{
+                  checked: value === choice.value,
+                  selected: value === choice.value,
+                }}
+                onPress={() => onSelect(choice.value)}
+                style={styles.timerChoice}>
+                <Text style={styles.timerChoiceText}>{choice.label}</Text>
+                {value === choice.value ? (
+                  <Ionicons name="checkmark-circle" size={23} color={palette.purple} />
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
@@ -438,17 +642,34 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     color: 'rgba(255,255,255,0.58)',
     fontSize: 12,
   },
-  cover: {
+  coverWrap: {
     alignSelf: 'center',
     width: '78%',
     maxWidth: 340,
     aspectRatio: 1,
     borderRadius: 28,
     marginBottom: 18,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.35,
     shadowOffset: { width: 0, height: 16 },
     shadowRadius: 28,
+  },
+  cover: {
+    width: '100%',
+    height: '100%',
+  },
+  loadingCover: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(16,27,63,0.62)',
+  },
+  loadingText: {
+    color: palette.white,
+    fontSize: 13,
+    fontWeight: '800',
   },
   title: {
     color: palette.white,
@@ -510,8 +731,11 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     marginTop: 17,
   },
   rate: {
+    minHeight: 44,
+    minWidth: 54,
     paddingHorizontal: 13,
-    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radii.pill,
     backgroundColor: 'rgba(255,255,255,0.09)',
   },
@@ -529,27 +753,30 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   actions: {
     marginTop: 18,
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 2,
+    flexWrap: 'wrap',
+    gap: 10,
   },
   action: {
-    flex: 1,
-    minWidth: 0,
-    maxWidth: 74,
-    minHeight: 60,
+    width: '47%',
+    flexGrow: 1,
+    minHeight: 72,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 9,
+    paddingHorizontal: 10,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   actionTitle: {
     color: palette.white,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
   },
   actionSubtitle: {
     color: 'rgba(255,255,255,0.56)',
-    fontSize: 10,
+    fontSize: 11,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
   },
@@ -588,6 +815,9 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   pressed: {
     opacity: 0.65,
   },
+  disabled: {
+    opacity: 0.45,
+  },
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -600,11 +830,20 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
     padding: 22,
     paddingBottom: 34,
   },
+  choiceModal: {
+    maxHeight: '82%',
+  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  modalClose: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalTitle: {
     color: palette.text,
@@ -622,6 +861,16 @@ const createStyles = (palette: ThemeColors) => StyleSheet.create({
   },
   queueList: {
     flexGrow: 0,
+    flexShrink: 1,
+  },
+  queueListContent: {
+    paddingBottom: 2,
+  },
+  choiceList: {
+    flexGrow: 0,
+  },
+  choiceListContent: {
+    paddingBottom: 2,
   },
   queueRow: {
     minHeight: 72,

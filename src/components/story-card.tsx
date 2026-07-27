@@ -1,8 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import Animated, {
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { radii, shadows, type ThemeColors } from '@/src/constants/theme';
 import { useApp } from '@/src/context/app-context';
@@ -23,6 +31,30 @@ export function StoryCard({ story, compact = false, horizontal = false, style }:
   const { language, toggleFavorite, isFavorite, t, colors: palette } = useApp();
   const styles = createStyles(palette);
   const favorite = isFavorite(story.id);
+  const favoriteScale = useSharedValue(1);
+  const animatedHeartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: favoriteScale.value }],
+  }));
+
+  /**
+   * Переключает избранное и запускает короткую спокойную анимацию сердечка.
+   */
+  const toggleStoryFavorite = () => {
+    favoriteScale.value = withSequence(
+      withSpring(0.78, {
+        damping: 16,
+        stiffness: 280,
+        reduceMotion: ReduceMotion.System,
+      }),
+      withSpring(1, {
+        damping: 12,
+        stiffness: 220,
+        reduceMotion: ReduceMotion.System,
+      }),
+    );
+    toggleFavorite(story.id);
+    Haptics.selectionAsync().catch(() => undefined);
+  };
 
   return (
     <Pressable
@@ -45,18 +77,21 @@ export function StoryCard({ story, compact = false, horizontal = false, style }:
         <Image source={story.coverImage} style={styles.image} contentFit="cover" transition={200} />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityLabel={favorite ? t('removeFavorite') : t('addFavorite')}
+          accessibilityState={{ selected: favorite }}
           hitSlop={8}
           onPress={(event) => {
             event.stopPropagation();
-            toggleFavorite(story.id);
+            toggleStoryFavorite();
           }}
           style={({ pressed }) => [styles.favorite, pressed && styles.favoritePressed]}>
-          <Ionicons
-            name={favorite ? 'heart' : 'heart-outline'}
-            size={20}
-            color={favorite ? palette.coral : palette.text}
-          />
+          <Animated.View style={animatedHeartStyle}>
+            <Ionicons
+              name={favorite ? 'heart' : 'heart-outline'}
+              size={20}
+              color={favorite ? palette.coral : palette.text}
+            />
+          </Animated.View>
         </Pressable>
       </View>
 
