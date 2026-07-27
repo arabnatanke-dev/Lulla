@@ -60,7 +60,75 @@ const audio: Record<string, { ru: number; en: number }> = {
 
 type StoryContent = Omit<Story, 'coverImage' | 'audio' | 'isOfflineAvailable'>;
 
-export const stories: Story[] = (rawContent as StoryContent[])
+/**
+ * Проверяет, что перевод содержит непустые русскую и английскую версии.
+ */
+function hasBothLanguages(value: unknown): value is { ru: string; en: string } {
+  if (typeof value !== 'object' || value === null) return false;
+  const localized = value as Record<string, unknown>;
+  return (
+    typeof localized.ru === 'string' &&
+    localized.ru.length > 0 &&
+    typeof localized.en === 'string' &&
+    localized.en.length > 0
+  );
+}
+
+/**
+ * Проверяет, что для обоих языков указана положительная длительность аудио.
+ */
+function hasBothDurations(value: unknown): value is { ru: number; en: number } {
+  if (typeof value !== 'object' || value === null) return false;
+  const durations = value as Record<string, unknown>;
+  return (
+    typeof durations.ru === 'number' &&
+    Number.isFinite(durations.ru) &&
+    durations.ru > 0 &&
+    typeof durations.en === 'number' &&
+    Number.isFinite(durations.en) &&
+    durations.en > 0
+  );
+}
+
+/**
+ * Проверяет обязательные поля новой сказки до того, как она попадёт в каталог.
+ */
+function isValidStoryContent(value: unknown): value is StoryContent {
+  if (typeof value !== 'object' || value === null) return false;
+  const story = value as Partial<StoryContent>;
+
+  return (
+    typeof story.id === 'string' &&
+    story.id.length > 0 &&
+    typeof story.slug === 'string' &&
+    story.slug.length > 0 &&
+    hasBothLanguages(story.title) &&
+    hasBothLanguages(story.description) &&
+    hasBothLanguages(story.text) &&
+    hasBothDurations(story.durationSeconds) &&
+    Array.isArray(story.categories) &&
+    typeof story.ageFrom === 'number' &&
+    typeof story.ageTo === 'number' &&
+    typeof story.isFeatured === 'boolean' &&
+    typeof story.order === 'number'
+  );
+}
+
+/**
+ * Проверяет наличие обложки и двух аудиофайлов для указанного сюжета.
+ */
+function hasStoryAssets(story: StoryContent) {
+  const storyAudio = audio[story.slug];
+  const valid = Boolean(covers[story.slug] && storyAudio?.ru && storyAudio?.en);
+  if (!valid) {
+    console.warn(`Story "${story.slug}" was skipped because its assets are incomplete`);
+  }
+  return valid;
+}
+
+export const stories: Story[] = (Array.isArray(rawContent) ? rawContent : [])
+  .filter(isValidStoryContent)
+  .filter(hasStoryAssets)
   .map((story) => ({
     ...story,
     coverImage: covers[story.slug],

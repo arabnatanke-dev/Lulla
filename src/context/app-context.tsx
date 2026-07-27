@@ -68,6 +68,7 @@ interface AppContextValue extends StoredSettings {
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
+type SettingsUpdater = (current: StoredSettings) => StoredSettings;
 
 /**
  * Хранит общие настройки приложения и передаёт их всем экранам.
@@ -77,79 +78,101 @@ export function AppProvider({ children }: PropsWithChildren) {
   const systemColorScheme = useColorScheme();
   const [settings, setSettings] = useState(defaults);
   const [hydrated, setHydrated] = useState(false);
-  const initialLoad = useRef(true);
+  const [storageReady, setStorageReady] = useState(false);
+  const storageReadyRef = useRef(false);
+  const pendingUpdaters = useRef<SettingsUpdater[]>([]);
 
   // При первом запуске читаем настройки, но не позволяем медленному хранилищу удерживать заставку.
   useEffect(() => {
-    let finished = false;
+    let mounted = true;
+    const timeout = setTimeout(() => {
+      if (mounted) setHydrated(true);
+    }, SETTINGS_LOAD_TIMEOUT_MS);
 
-    /**
-     * Завершает загрузку один раз и переводит приложение к основному интерфейсу.
-     */
-    const finishHydration = (stored: StoredSettings | null) => {
-      if (finished) return;
-      finished = true;
-      if (stored) {
-        setSettings({ ...defaults, ...stored });
-      }
-      setHydrated(true);
-      initialLoad.current = false;
-    };
+    loadSettings(defaults)
+      .then((stored) => {
+        if (!mounted) return;
+        const baseSettings = stored ?? defaults;
 
-    const timeout = setTimeout(() => finishHydration(null), SETTINGS_LOAD_TIMEOUT_MS);
-    loadSettings()
-      .then(finishHydration)
+        // Все действия после аварийного таймаута накладываем поверх дисковых данных по порядку.
+        const mergedSettings = pendingUpdaters.current.reduce(
+          (current, updater) => updater(current),
+          baseSettings,
+        );
+        pendingUpdaters.current = [];
+        storageReadyRef.current = true;
+        setStorageReady(true);
+        setSettings(mergedSettings);
+        setHydrated(true);
+      })
       .finally(() => clearTimeout(timeout));
 
     return () => {
-      finished = true;
+      mounted = false;
       clearTimeout(timeout);
     };
   }, []);
 
-  // После любого изменения настроек сохраняем их с небольшой задержкой.
+  // После любого изменения сохраняем настройки, но только когда исходное чтение уже завершилось.
   useEffect(() => {
-    if (!hydrated || initialLoad.current) return;
+    if (!hydrated || !storageReady) return;
     const timeout = setTimeout(() => saveSettings(settings), 250);
     return () => clearTimeout(timeout);
-  }, [hydrated, settings]);
+  }, [hydrated, settings, storageReady]);
+
+  /**
+   * Применяет пользовательское изменение сразу и временно запоминает его до окончания чтения.
+   * Благодаря очереди поздняя hydration сохраняет избранное, очередь и прогресс пользователя.
+   */
+  const updateSettings = useCallback(
+    (updater: SettingsUpdater) => {
+      if (!storageReadyRef.current) {
+        pendingUpdaters.current.push(updater);
+      }
+      setSettings(updater);
+    },
+    [],
+  );
 
   /**
    * Частично обновляет настройки, сохраняя поля, которые не были переданы.
    */
-  const patch = useCallback((next: Partial<StoredSettings>) => {
-    setSettings((current) => ({ ...current, ...next }));
-  }, []);
+  const patch = useCallback(
+    (next: Partial<StoredSettings>) => {
+      updateSettings((current) => ({ ...current, ...next }));
+    },
+    [updateSettings],
+  );
 
   /**
    * Полностью заменяет очередь и удаляет из неё пустые или повторяющиеся идентификаторы.
    */
   const setQueueIds = useCallback((storyIds: string[]) => {
     const uniqueIds = [...new Set(storyIds.filter(Boolean))];
-    setSettings((current) => ({ ...current, queueIds: uniqueIds }));
-  }, []);
+    updateSettings((current) => ({ ...current, queueIds: uniqueIds }));
+  }, [updateSettings]);
 
   /**
    * Добавляет сказку в конец очереди, если её там ещё нет.
    */
   const addToQueue = useCallback((storyId: string) => {
-    setSettings((current) => ({
+    updateSettings((current) => ({
       ...current,
       queueIds: current.queueIds.includes(storyId)
         ? current.queueIds
         : [...current.queueIds, storyId],
     }));
-  }, []);
+  }, [updateSettings]);
 
   /**
    * Удаляет выбранную сказку из сохранённой очереди.
    */
   const removeFromQueue = useCallback((storyId: string) => {
-    setSettings((current) => ({
+    updateSettings((current) => ({
       ...current,
       queueIds: current.queueIds.filter((id) => id !== storyId),
     }));
-  }, []);
+  }, [updateSettings]);
 
   /**
    * Очищает всю очередь, не останавливая текущую сказку.
@@ -173,6 +196,66 @@ export function AppProvider({ children }: PropsWithChildren) {
     (settings.themeMode === 'system' && systemColorScheme === 'dark');
   const colors = isDark ? darkPalette : lightPalette;
 
+  /**
+   * Возвращает переведённую строку и безопасно подставляет русский текст при неизвестном ключе.
+   */
+  const t = useCallback(
+    (key: string) => copy[settings.language]?.[key] ?? copy.ru[key] ?? key,
+    [settings.language],
+  );
+
+  /**
+   * Переключает состояние избранного для выбранной сказки.
+   */
+  const toggleFavorite = useCallback(
+    (storyId: string) => {
+      updateSettings((current) => ({
+        ...current,
+        favorites: current.favorites.includes(storyId)
+          ? current.favorites.filter((id) => id !== storyId)
+          : [...current.favorites, storyId],
+      }));
+    },
+    [updateSettings],
+  );
+
+  /**
+   * Проверяет, находится ли сказка в списке избранного.
+   */
+  const isFavorite = useCallback(
+    (storyId: string) => settings.favorites.includes(storyId),
+    [settings.favorites],
+  );
+
+  /**
+   * Сохраняет безопасную неотрицательную позицию прослушивания.
+   */
+  const setProgress = useCallback(
+    (storyId: string, seconds: number) => {
+      updateSettings((current) => ({
+        ...current,
+        progress: { ...current.progress, [storyId]: Math.max(0, seconds) },
+      }));
+    },
+    [updateSettings],
+  );
+
+  /**
+   * Проверяет, находится ли сказка в очереди воспроизведения.
+   */
+  const isQueued = useCallback(
+    (storyId: string) => settings.queueIds.includes(storyId),
+    [settings.queueIds],
+  );
+
+  /**
+   * Сохраняет выбранную скорость для текущей и следующих сказок.
+   */
+  const changePlaybackRate = useCallback(
+    (playbackRate: number) => patch({ playbackRate }),
+    [patch],
+  );
+
   // Собираем публичный API контекста, которым пользуются экраны приложения.
   const value = useMemo<AppContextValue>(
     () => ({
@@ -180,44 +263,40 @@ export function AppProvider({ children }: PropsWithChildren) {
       hydrated,
       colors,
       isDark,
-      t: (key) => copy[settings.language][key] ?? key,
+      t,
       setLanguage: (language) => patch({ language }),
       completeOnboarding: () => patch({ onboardingComplete: true }),
-      toggleFavorite: (storyId) =>
-        setSettings((current) => ({
-          ...current,
-          favorites: current.favorites.includes(storyId)
-            ? current.favorites.filter((id) => id !== storyId)
-            : [...current.favorites, storyId],
-        })),
-      isFavorite: (storyId) => settings.favorites.includes(storyId),
-      setProgress: (storyId, seconds) =>
-        setSettings((current) => ({
-          ...current,
-          progress: { ...current.progress, [storyId]: Math.max(0, seconds) },
-        })),
+      toggleFavorite,
+      isFavorite,
+      setProgress,
       resetProgress: () => patch({ progress: {} }),
-      setPlaybackRate: (playbackRate) => patch({ playbackRate }),
+      setPlaybackRate: changePlaybackRate,
       setTextSize: (textSize) => patch({ textSize }),
       setThemeMode: (themeMode) => patch({ themeMode }),
       setQueueIds,
       addToQueue,
       removeFromQueue,
       clearQueue,
-      isQueued: (storyId) => settings.queueIds.includes(storyId),
+      isQueued,
       setRepeatMode,
     }),
     [
       addToQueue,
+      changePlaybackRate,
       clearQueue,
       colors,
       hydrated,
+      isFavorite,
       isDark,
+      isQueued,
       patch,
       removeFromQueue,
       setQueueIds,
       setRepeatMode,
       settings,
+      setProgress,
+      t,
+      toggleFavorite,
     ],
   );
 
